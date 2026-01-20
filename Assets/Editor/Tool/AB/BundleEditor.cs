@@ -1,7 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
 using UnityEditor;
+using UnityEngine;
 
 public class BundleEditor
 {
@@ -75,12 +75,16 @@ public class BundleEditor
             SetABName(name, m_AllPrefabDir[name]);
         }
 
+        BuildAssetBundle();
+
+
         string[] oldABName = AssetDatabase.GetAllAssetBundleNames();
         for(int i = 0; i < oldABName.Length; i++)
         {
             AssetDatabase.RemoveAssetBundleName(oldABName[i], true);
             EditorUtility.DisplayProgressBar("清除AB包名", "名字：" + oldABName[i], (float)i / oldABName.Length);
         }
+        AssetDatabase.Refresh();
         EditorUtility.ClearProgressBar();
     }
 
@@ -116,6 +120,31 @@ public class BundleEditor
         {
             SetABName(name, paths[i]);
         }
+    }
+
+    static void BuildAssetBundle()
+    {
+        string[] allABName = AssetDatabase.GetAllAssetBundleNames();
+        //key 为全路径 value 为AB包名
+        Dictionary<string, string> resPathDic = new Dictionary<string, string>();
+        for(int i = 0; i < allABName.Length; i++)
+        {
+            string[] allBundlePath = AssetDatabase.GetAssetPathsFromAssetBundle(allABName[i]);
+            for(int j = 0; j < allBundlePath.Length; j++)
+            {
+                if(allBundlePath[j].EndsWith(".cs"))
+                {
+                    continue;
+                }
+                Debug.Log("此AB包：" + allABName[i] + " 包含资源：" + allBundlePath[j]);
+                resPathDic.Add(allBundlePath[j], allABName[i]);
+            }
+        }
+
+        //生成AB包配置表
+
+
+        BuildPipeline.BuildAssetBundles(Application.streamingAssetsPath, BuildAssetBundleOptions.ChunkBasedCompression, EditorUserBuildSettings.activeBuildTarget);
     }
 
 }
