@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Xml.Serialization;
-using UnityEditor;
+using UnityEditor; // 添加这一行
 using UnityEngine;
 
 public class BundleEditor
@@ -44,37 +44,40 @@ public class BundleEditor
         }
 
         //找到m_AllPrefabPath下所有的预设体
-        string[] allStr = AssetDatabase.FindAssets("t:Prefab", abConfig.m_AllPrefabPath.ToArray());
-        for(int i = 0; i < allStr.Length; i++)
+        if(abConfig.m_AllPrefabPath.Count > 0)
         {
-            //通过guid获取预设体路径
-            string path = AssetDatabase.GUIDToAssetPath(allStr[i]);
-            EditorUtility.DisplayProgressBar("查找预设体", "正在查找：" + path, (float)i / allStr.Length);
-            m_ConfigFil.Add(path);
-            //判断是否需要打包进AB包
-            if (!ContainAllFileAB(path))
+            string[] allStr = AssetDatabase.FindAssets("t:Prefab", abConfig.m_AllPrefabPath.ToArray());
+            for(int i = 0; i < allStr.Length; i++)
             {
-                GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
-                string [] allDepends = AssetDatabase.GetDependencies(path);
-                List<string> allDependsPath = new List<string>();
-                for(int j = 0; j < allDepends.Length; j++)
+                //通过guid获取预设体路径
+                string path = AssetDatabase.GUIDToAssetPath(allStr[i]);
+                EditorUtility.DisplayProgressBar("查找预设体", "正在查找：" + path, (float)i / allStr.Length);
+                m_ConfigFil.Add(path);
+                //判断是否需要打包进AB包
+                if (!ContainAllFileAB(path))
                 {
-                    Debug.Log("依赖：" + allDepends[j]);
-                    if(!ContainAllFileAB(allDepends[j]) && !allDepends[j].EndsWith(".cs"))
+                    GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+                    string [] allDepends = AssetDatabase.GetDependencies(path);
+                    List<string> allDependsPath = new List<string>();
+                    for(int j = 0; j < allDepends.Length; j++)
                     {
-                        m_AllFilrAB.Add(allDepends[j]);
-                        allDependsPath.Add(allDepends[j]);
+                        Debug.Log("依赖：" + allDepends[j]);
+                        if(!ContainAllFileAB(allDepends[j]) && !allDepends[j].EndsWith(".cs"))
+                        {
+                            m_AllFilrAB.Add(allDepends[j]);
+                            allDependsPath.Add(allDepends[j]);
+                        }
+                    }
+                    if(m_AllPrefabDir.ContainsKey(prefab.name))
+                    {
+                        Debug.LogError("存在相同名字的prefab" + prefab.name);
+                    }
+                    else
+                    {
+                        m_AllPrefabDir.Add(prefab.name, allDependsPath);
                     }
                 }
-                if(m_AllPrefabDir.ContainsKey(prefab.name))
-                {
-                    Debug.LogError("存在相同名字的prefab" + prefab.name);
-                }
-                else
-                {
-                    m_AllPrefabDir.Add(prefab.name, allDependsPath);
-                }
-            }
+            }   
         }
         EditorUtility.ClearProgressBar();
 
@@ -109,7 +112,7 @@ public class BundleEditor
     {
         for(int i = 0; i < m_AllFilrAB.Count; i++)
         {
-            if (path.Contains(m_AllFilrAB[i]) || path == m_AllFilrAB[i])
+            if (path.Contains(m_AllFilrAB[i]) && (path.Replace(m_AllFilrAB[i],"")[0] != '/') || path == m_AllFilrAB[i])
             {
                 return true;
             }

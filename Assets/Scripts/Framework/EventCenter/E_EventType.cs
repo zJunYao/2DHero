@@ -3,47 +3,59 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// 事件类型 枚举
+/// 全局事件类型枚举。
+/// 事件参数类型由具体触发和监听的地方约定。
 /// </summary>
-public enum E_EventType 
+public enum E_EventType
 {
     /// <summary>
-    /// 怪物死亡事件 —— 参数：Monster
+    /// 怪物死亡事件，参数：Monster。
     /// </summary>
     E_Monster_Dead,
+
     /// <summary>
-    /// 玩家获取奖励 —— 参数：int
+    /// 玩家获得奖励事件，参数：int。
     /// </summary>
     E_Player_GetReward,
+
     /// <summary>
-    /// 测试用事件 —— 参数：无
+    /// 测试事件，参数：无。
     /// </summary>
     E_Test,
+
     /// <summary>
-    /// 场景切换时进度变化获取
+    /// 场景异步加载进度变化事件，参数：float。
     /// </summary>
     E_SceneLoadChange,
 
     /// <summary>
-    /// 输入系统触发技能1 行为
+    /// 技能 1 输入事件，参数：无。
     /// </summary>
     E_Input_Skill1,
+
     /// <summary>
-    /// 输入系统触发技能2 行为
+    /// 技能 2 输入事件，参数：无。
     /// </summary>
     E_Input_Skill2,
+
     /// <summary>
-    /// 输入系统触发技能3 行为
+    /// 技能 3 输入事件，参数：无。
     /// </summary>
     E_Input_Skill3,
 
     /// <summary>
-    /// 水平热键 -1~1的事件监听
+    /// 水平移动轴事件，参数范围通常为 -1 ~ 1。
     /// </summary>
     E_Input_Horizontal,
 
     /// <summary>
-    /// 竖直热键 -1~1的事件监听
+    /// 垂直移动轴事件，参数范围通常为 -1 ~ 1。
     /// </summary>
     E_Input_Vertical,
+
+    /// <summary>
+    /// 通用移动轴事件，参数：Vector2。
+    /// 主要用于同时接收键盘轴或 UI 虚拟摇杆轴。
+    /// </summary>
+    E_Input_MoveAxis,
 }
