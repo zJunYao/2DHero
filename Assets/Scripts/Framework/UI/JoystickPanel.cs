@@ -73,7 +73,7 @@ public class JoystickPanel : BasePanel
 
         touchArea = GetControl<Image>("TouchArea");
         Image bgImage = GetControl<Image>("Bg");
-        Image handleImage = GetControl<Image>("Handle");
+        Image handleImage = GetControl<Image>("JoystickHandle");
 
         if (touchArea == null || bgImage == null || handleImage == null)
             return;

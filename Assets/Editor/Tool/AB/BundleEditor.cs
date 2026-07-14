@@ -303,7 +303,7 @@ public class BundleEditor
         {
             ab.Path = "";
         }
-        string binaryPath = Application.dataPath + "/AssetBundleConfig.bytes";
+        string binaryPath = "Assets/Editor/Tool/AB/Data/AssetBundleConfig.bytes";
         if(File.Exists(binaryPath))
         {
             File.Delete(binaryPath);

@@ -34,7 +34,7 @@ public class main : MonoBehaviour
         {
             // 显示通用摇杆面板。
             // 这里放在 System 层，避免被普通 UI 遮挡。
-            UIMgr.Instance.ShowPanel<JoystickPanel>(E_UILayer.System);
+            UIMgr.Instance.ShowPanel<JoystickPanel>(E_UILayer.System);      
         }
     }
 
