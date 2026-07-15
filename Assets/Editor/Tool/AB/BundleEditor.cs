@@ -249,7 +249,7 @@ public class BundleEditor
         {
             ABBase ab = new ABBase();
             ab.Path = path;
-            ab.Crc = CRC32.CalculateFile(path);
+            ab.Crc = CRC32.Calculate(path);
             ab.ABName = resPathDic[path];
             ab.AssetName = path.Substring(path.LastIndexOf("/") + 1, path.Length - path.LastIndexOf("/") - 1);
             ab.ABDependce = new List<string>();

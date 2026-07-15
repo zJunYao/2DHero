@@ -910,7 +910,6 @@ GameObject:
   - component: {fileID: 49170262005273965}
   - component: {fileID: 3877083866572571898}
   - component: {fileID: 5922204970481888286}
-  - component: {fileID: 7274286454805704589}
   m_Layer: 5
   m_Name: BeginPanel
   m_TagString: Untagged
@@ -979,15 +978,3 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
---- !u!114 &7274286454805704589
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7904674762153370030}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d0b0d388edf3f174ba1210d79b509eaa, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 

@@ -1,6 +1,8 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <AssetBundleConfig xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <ABList Path="Assets/Editor/Tool/AB/Data/AssetBundleConfig.bytes" Crc="701093787" ABName="abconfig" AssetName="AssetBundleConfig.bytes" />
-  <ABList Path="Assets/Editor/ArtRes/ui/BeginPanel.prefab" Crc="1827591364" ABName="ui" AssetName="BeginPanel.prefab" />
-  <ABList Path="Assets/Editor/ArtRes/ui/JoystickPanel.prefab" Crc="3409246991" ABName="ui" AssetName="JoystickPanel.prefab" />
+  <ABList Path="Assets/Editor/Tool/AB/Data/AssetBundleConfig.bytes" Crc="536332488" ABName="abconfig" AssetName="AssetBundleConfig.bytes" />
+  <ABList Path="Assets/Editor/ArtRes/ui/BeginPanel.prefab" Crc="3783893765" ABName="beginpanel" AssetName="BeginPanel.prefab" />
+  <ABList Path="Assets/Editor/ArtRes/ui/JoystickPanel.prefab" Crc="2721028109" ABName="joystickpanel" AssetName="JoystickPanel.prefab" />
+  <ABList Path="Assets/Editor/ArtRes/music/Begin.mp3" Crc="817479806" ABName="music" AssetName="Begin.mp3" />
+  <ABList Path="Assets/Editor/ArtRes/sound/hit_4.mp3" Crc="1722624665" ABName="sound" AssetName="hit_4.mp3" />
 </AssetBundleConfig>

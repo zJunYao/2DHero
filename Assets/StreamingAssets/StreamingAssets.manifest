@@ -1,10 +1,19 @@
 ManifestFileVersion: 0
-CRC: 2079449619
+CRC: 2362574956
 AssetBundleManifest:
   AssetBundleInfos:
     Info_0:
-      Name: ui
+      Name: abconfig
       Dependencies: {}
     Info_1:
-      Name: abconfig
+      Name: music
+      Dependencies: {}
+    Info_2:
+      Name: sound
+      Dependencies: {}
+    Info_3:
+      Name: beginpanel
+      Dependencies: {}
+    Info_4:
+      Name: joystickpanel
       Dependencies: {}

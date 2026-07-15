@@ -1,20 +1,20 @@
 ManifestFileVersion: 0
-CRC: 4235720904
+CRC: 4178993579
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 54464c018ecd99342ccf3f1cc5242ea8
+    Hash: 082cc520087e692c642992d2ed564688
   TypeTreeHash:
     serializedVersion: 2
-    Hash: 5ad585dd02dfb5016c0dad519eab8f49
+    Hash: 9a2ca7bdbd1871f7131daf57de908e0c
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 54464c018ecd99342ccf3f1cc5242ea8
+    Hash: 082cc520087e692c642992d2ed564688
 HashAppended: 0
 ClassTypes:
-- Class: 49
+- Class: 83
   Script: {instanceID: 0}
 SerializeReferenceClassIdentifiers: []
 Assets:
-- Assets/Editor/Tool/AB/Data/AssetBundleConfig.bytes
+- Assets/Editor/ArtRes/sound/hit_4.mp3
 Dependencies: []

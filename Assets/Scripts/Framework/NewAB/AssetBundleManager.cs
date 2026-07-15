@@ -100,7 +100,7 @@ public class AssetBundleManager : BaseManager<AssetBundleManager>
     private AssetBundle LoadAssetBundle(string name)
     {
         AssetBundleItem item = null;
-        uint crc = CRC32.CalculateFile(name);
+        uint crc = CRC32.Calculate(name);
 
         if (!m_AssetBundleItemDic.TryGetValue(crc, out item))
         {
@@ -158,7 +158,7 @@ public class AssetBundleManager : BaseManager<AssetBundleManager>
     private void UnLoadAssetBundle(string name)
     {
         AssetBundleItem item = null;
-        uint crc = CRC32.CalculateFile(name);
+        uint crc = CRC32.Calculate(name);
         if (m_AssetBundleItemDic.TryGetValue(crc, out item) && item != null)
         {
             item.RefCount--;
@@ -208,6 +208,7 @@ public class AssetBundleItem
 /// </summary>
 public class ResouceItem
 {
+    #region  AssetBundle 配置信息
     // 资源路径的CRC
     public uint m_Crc = 0;
     // 该资源的文件名
@@ -218,4 +219,29 @@ public class ResouceItem
     public List<string> m_DependAssetBundle = null;
     // 该资源加载完的AB包
     public AssetBundle m_AssetBundle = null;
+    #endregion
+
+    #region 资源缓存信息
+    // 资源对象
+    public Object m_Obj = null;
+    // 资源对象的唯一标识
+    public int m_Guid = 0;
+    // 资源最后使用时间
+    public float m_LastUseTime = 0.0f;
+    // 资源引用计数
+    protected int m_RefCount = 0;
+
+    public int RefCount
+    {
+        get { return m_RefCount; }
+        set
+        {
+            m_RefCount = value;
+            if (m_RefCount < 0)
+            {
+                Debug.LogError("refcount < 0" + m_RefCount + "," + (m_Obj != null ? m_Obj.name : "name is null"));
+            }
+        }
+    }
+    #endregion
 }

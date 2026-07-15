@@ -12,9 +12,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a06ff8d59f01f0d4a8bfadac36008417, type: 3}
   m_Name: ABConfig
   m_EditorClassIdentifier: 
-  m_AllPrefabPath: []
+  m_AllPrefabPath:
+  - Assets/Editor/ArtRes/ui
   m_FileDirAB:
-  - ABName: ui
-    Path: Assets/Editor/ArtRes/ui
   - ABName: abconfig
     Path: Assets/Editor/Tool/AB/Data
+  - ABName: music
+    Path: Assets/Editor/ArtRes/music
+  - ABName: sound
+    Path: Assets/Editor/ArtRes/sound

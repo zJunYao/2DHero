@@ -1,15 +1,15 @@
 ManifestFileVersion: 0
-CRC: 1709374006
+CRC: 1345134353
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: cf59a06284f52c37385ef40b60007fa5
+    Hash: f7ad19430dfa56e7d32898dce6fda904
   TypeTreeHash:
     serializedVersion: 2
-    Hash: 5c871c9b7e186fece724dec4075cb4b5
+    Hash: 3bc1a03b56a8b4f1319de421a84fb305
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: cf59a06284f52c37385ef40b60007fa5
+    Hash: f7ad19430dfa56e7d32898dce6fda904
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -25,13 +25,9 @@ ClassTypes:
 - Class: 114
   Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
 - Class: 114
-  Script: {fileID: 11500000, guid: d3c2e8c54d12427f9df0c8d5343ef4c1, type: 3}
-- Class: 114
   Script: {fileID: 11500000, guid: 71c1514a6bd24e1e882cebbe1904ce04, type: 3}
 - Class: 114
   Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-- Class: 114
-  Script: {fileID: 11500000, guid: d0b0d388edf3f174ba1210d79b509eaa, type: 3}
 - Class: 115
   Script: {instanceID: 0}
 - Class: 128
@@ -87,5 +83,8 @@ SerializeReferenceClassIdentifiers:
   ClassName: UnityEngine.UI.SpriteState
 Assets:
 - Assets/Editor/ArtRes/ui/BeginPanel.prefab
-- Assets/Editor/ArtRes/ui/JoystickPanel.prefab
+- Assets/TextMesh Pro/Shaders/TMP_SDF-Mobile.shader
+- Assets/TextMesh Pro/Resources/Fonts & Materials/LiberationSans SDF - Fallback.asset
+- Assets/TextMesh Pro/Resources/Fonts & Materials/LiberationSans SDF.asset
+- Assets/TextMesh Pro/Fonts/LiberationSans.ttf
 Dependencies: []

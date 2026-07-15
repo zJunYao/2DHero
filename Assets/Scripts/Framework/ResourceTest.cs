@@ -21,7 +21,7 @@ public class ResourceTest : MonoBehaviour
         stream.Close();
 
         string path = "Assets/Editor/ArtRes/ui/BeginPanel.prefab";
-        uint crc = CRC32.CalculateFile(path);
+        uint crc = CRC32.Calculate(path);
         ABBase abBase = null;
         for (int i = 0; i < config.ABList.Count; i++)
         {

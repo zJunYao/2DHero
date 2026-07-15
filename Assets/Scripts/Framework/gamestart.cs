@@ -4,6 +4,8 @@ using UnityEngine;
 
 public class gamestart : MonoBehaviour
 {
+    public AudioSource audioSource;
+    private AudioClip clip;
     void Awake()
     {
         AssetBundleManager.Instance.LoadAssetBundleConfig();
@@ -11,12 +13,21 @@ public class gamestart : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        clip = ResourceManager.Instance.LoadResource<AudioClip>("Assets/Editor/ArtRes/music/Begin.mp3");
+        audioSource.clip = clip;
+        audioSource.Play();
         
     }
 
     // Update is called once per frame
     void Update()
     {
-        
+        if (Input.GetKeyDown(KeyCode.A))
+        {
+            audioSource.Stop();
+            audioSource.clip = null;
+            ResourceManager.Instance.ReleaseResouce(clip,true);      
+            clip = null;
+        }
     }
 }
