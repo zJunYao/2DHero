@@ -230,6 +230,8 @@ public class ResouceItem
     public float m_LastUseTime = 0.0f;
     // 资源引用计数
     protected int m_RefCount = 0;
+    // 是否跳场景清掉
+    public bool m_Clear = true;
 
     public int RefCount
     {

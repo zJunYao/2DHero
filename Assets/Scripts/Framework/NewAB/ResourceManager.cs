@@ -69,7 +69,7 @@ public class ResourceManager : BaseManager<ResourceManager>
 {
     private ResourceManager() { }
     // 是否从AssetBundle加载资源，true表示从AssetBundle加载，false表示从Editor API加载
-    public bool m_LoadFormAssetBundle = false;
+    public bool m_LoadFormAssetBundle = true;
     //缓存已加载资源字典
     public Dictionary<uint, ResouceItem> AssetDic { get; set; } = new Dictionary<uint, ResouceItem>();
     //缓存引用计数为0的资源对象，达到最大缓存数量时，释放最久未使用的资源对象
@@ -106,15 +106,91 @@ public class ResourceManager : BaseManager<ResourceManager>
     /// </summary>
     protected void WashOut()
     {
-        // 当内存使用率超过阈值时，清除最早未使用的资源
-        // {
-        //     if (m_NoRefrenceAssetMapList.Size() <= 0)
-        //         break;
+        
+    }
+
+    /// <summary>
+    ///  清空缓存 
+    /// </summary>
+    public void ClearCache()
+    {
+        List<ResouceItem> tempList = new List<ResouceItem>();
+
+        foreach (ResouceItem item in AssetDic.Values)
+        {
+            if (item.m_Clear)
+            {
+                tempList.Add(item);
+            }
+        }
     
-        //     ResouceItem item = m_NoRefrenceAssetMapList.Back();
-        //     DestoryResouceItme(item, true);
-        //     m_NoRefrenceAssetMapList.Pop();
-        // }
+        foreach (ResouceItem item in tempList)
+        {
+            DestoryResouceItme(item, true);
+        }
+    
+        tempList.Clear();
+    }
+
+    /// <summary>
+    /// 预加载
+    /// </summary>
+    /// <param name="path"></param>
+    public void PreloadRes(string path)
+    {
+        //首先校验路径
+        if (string.IsNullOrEmpty(path))
+        {
+            return;
+        }
+
+        uint crc = CRC32.Calculate(path);
+        //第二个参数使用 0，因为预加载不代表资源正在被正常业务逻辑引用
+        ResouceItem item = GetCacheResouceItem(crc, 0);
+        if (item != null)
+        {
+            return;
+        }
+
+        Object obj = null;
+#if UNITY_EDITOR
+        if (!m_LoadFormAssetBundle)
+        {
+            // 通过 Editor API 加载
+            item = AssetBundleManager.Instance.FindResouceItme(crc);
+            if(item.m_Obj != null)
+            {
+                obj = item.m_Obj;
+            }
+            else
+            {
+                obj = LoadAssetByEditor<Object>(path);
+            }
+        }
+#endif
+        if (obj == null)
+        {
+            // 通过 AssetBundle 加载
+            item = AssetBundleManager.Instance.LoadResouceAssetBundle(crc);
+            if (item != null && item.m_AssetBundle != null)
+            {
+                if (item.m_Obj != null)
+                {
+                    // 如果资源对象已经加载过了，就直接返回
+                    obj = item.m_Obj;
+                }
+                else
+                {
+                    // 如果资源对象没有加载过，就从 AssetBundle 中加载资源对象
+                    obj = item.m_AssetBundle.LoadAsset<Object>(item.m_AssetName);
+                }
+            }
+        }
+        // 缓存资源对象
+        CacheResource(path, ref item, crc, obj);
+        //跳场景 不清空缓存
+        item.m_Clear = false;
+        ReleaseResouce(obj, false);
     }
 
     #region 资源同步加载
@@ -132,15 +208,15 @@ public class ResourceManager : BaseManager<ResourceManager>
         {
             return;
         }
+        // 不销毁时保留在 AssetDic，作为零引用缓存
+        if (!destroyCache)
+        {
+            // m_NoRefrenceAssetMapList.InsertToHead(item);
+            return;
+        }
         //从资源字典移除
         if (!AssetDic.Remove(item.m_Crc))
         {
-            return;
-        }
-        //保留为无引用缓存
-        if (!destroyCache)
-        {
-            m_NoRefrenceAssetMapList.InsertToHead(item);
             return;
         }
         //释放AssetBundle
@@ -149,6 +225,10 @@ public class ResourceManager : BaseManager<ResourceManager>
         if (item.m_Obj != null)
         {
             item.m_Obj = null;
+ //清空资源对象引用后，调用Resources.UnloadUnusedAssets()释放内存
+#if UNITY_EDITOR
+            Resources.UnloadUnusedAssets();
+#endif
         }
     }
 
@@ -229,8 +309,8 @@ public class ResourceManager : BaseManager<ResourceManager>
     /// <summary>
     /// 不需要实例化的资源卸载
     /// </summary>
-    /// <param name="obj"></param>
-    /// <param name="destoryObj"></param>
+    /// <param name="obj"> 资源对象 </param>
+    /// <param name="destoryObj"> 是否销毁资源对象 </param>
     /// <returns></returns>
     public bool ReleaseResouce(Object obj, bool destoryObj = false)
     {
@@ -254,6 +334,32 @@ public class ResourceManager : BaseManager<ResourceManager>
             return false;
         }
 
+        //每执行一次释放，引用计数减一
+        item.RefCount--;
+        DestoryResouceItme(item, destoryObj);
+        return true;
+    }
+
+    /// <summary>
+    /// 不需要实例化的资源卸载
+    /// </summary>
+    /// <param name="path"> 资源路径 </param>
+    /// <param name="destoryObj"> 是否销毁资源对象 </param>
+    /// <returns></returns>
+    public bool ReleaseResouce(string path, bool destoryObj = false)
+    {
+        if (string.IsNullOrEmpty(path))
+        {
+            return false;
+        }
+        uint crc = CRC32.Calculate(path);
+
+        ResouceItem item = null;
+        if (!AssetDic.TryGetValue(crc, out item) || item == null)
+        {
+            Debug.LogError("AssetDic里不存在该资源：" + path + " 可能释放了多次");
+            return false;
+        }
         //每执行一次释放，引用计数减一
         item.RefCount--;
         DestoryResouceItme(item, destoryObj);
@@ -314,10 +420,10 @@ public class ResourceManager : BaseManager<ResourceManager>
             item.RefCount += addrefcount;
             item.m_LastUseTime = Time.realtimeSinceStartup;
 
-            if (item.RefCount <= 1)
-            {
-                m_NoRefrenceAssetMapList.Remove(item);
-            }
+            // if (item.RefCount <= 1)
+            // {
+            //     m_NoRefrenceAssetMapList.Remove(item);
+            // }
         }
         return item;    
     }
@@ -401,7 +507,7 @@ public class ResourceManager : BaseManager<ResourceManager>
                 Object obj = null;
                 ResouceItem item = null;
                 
-                #if UNITY_EDITOR
+#if UNITY_EDITOR
                 if (!m_LoadFormAssetBundle)
                 {
                     // 通过 Editor API 加载
@@ -411,7 +517,7 @@ public class ResourceManager : BaseManager<ResourceManager>
 
                     item = AssetBundleManager.Instance.FindResouceItme(loadingItem.m_Crc);
                 }
-                #endif
+#endif
                 // 通过 AssetBundle 加载
                 if (obj == null)
                 {
