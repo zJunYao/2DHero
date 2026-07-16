@@ -2,15 +2,104 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+public enum LoadResPriority
+{
+    RES_HIGHT = 0, // 最高优先级
+    RES_MIDDLE,    // 一般优先级
+    RES_SLOW,      // 低优先级
+    RES_NUM
+}
+
+//使用独立对象封装加载请求
+public class AsyncLoadResParam
+{
+    // 回调参数列表
+    public List<AsyncCallBack> m_CallBackList = new List<AsyncCallBack>();
+    // 资源路径的CRC
+    public uint m_Crc;
+    // 资源路径
+    public string m_Path;
+    //是否需要以 Sprite 类型加载
+    public bool m_Sprite = false;
+    // 资源加载优先级
+    public LoadResPriority m_Priority = LoadResPriority.RES_SLOW;
+    public void Reset()
+    {
+        m_CallBackList.Clear();
+        m_Crc = 0;
+        m_Path = "";
+        m_Sprite = false;
+        m_Priority = LoadResPriority.RES_SLOW;
+    }
+}
+
+/// <summary>
+/// 回调参数封装类
+/// </summary>
+public class AsyncCallBack
+{
+    // 加载完成回调
+    public OnAsyncObjFinish m_DealFinish = null;
+    // 回调参数1
+    public object m_Param1 = null;
+    // 回调参数2
+    public object m_Param2 = null;
+    // 回调参数3
+    public object m_Param3 = null;
+    public void Reset()
+    {
+        m_DealFinish = null;
+        m_Param1 = null;
+        m_Param2 = null;
+        m_Param3 = null;
+    }
+}
+
+/// <summary>
+/// 异步加载资源完成回调委托
+/// </summary>
+/// <param name="path"></param>
+/// <param name="obj"></param>
+/// <param name="param1"></param>
+/// <param name="param2"></param>
+/// <param name="param3"></param>
+public delegate void OnAsyncObjFinish(string path, Object obj, object param1 = null, object param2 = null, object param3 = null);
+
 public class ResourceManager : BaseManager<ResourceManager>
 {
     private ResourceManager() { }
     // 是否从AssetBundle加载资源，true表示从AssetBundle加载，false表示从Editor API加载
-    public bool m_LoadFormAssetBundle = true;
+    public bool m_LoadFormAssetBundle = false;
     //缓存已加载资源字典
     public Dictionary<uint, ResouceItem> AssetDic { get; set; } = new Dictionary<uint, ResouceItem>();
     //缓存引用计数为0的资源对象，达到最大缓存数量时，释放最久未使用的资源对象
     protected CMapList<ResouceItem> m_NoRefrenceAssetMapList = new CMapList<ResouceItem>();
+
+    //中间类 回调类的对象池
+    protected ClassObjectPool<AsyncLoadResParam> m_AsyncLoadResParamPool = new ClassObjectPool<AsyncLoadResParam>(50);
+    protected ClassObjectPool<AsyncCallBack> m_AsyncCallBackPool = new ClassObjectPool<AsyncCallBack>(100);
+
+    //MonoBehaviour对象，用于协程的启动和停止
+    protected MonoBehaviour m_Startmono;
+    // 正在异步加载的资源列表
+    protected List<AsyncLoadResParam>[] m_LoadingAssetList = new List<AsyncLoadResParam>[(int)LoadResPriority.RES_NUM];
+    // 记录正在异步加载资源的字典
+    protected Dictionary<uint, AsyncLoadResParam> m_LoadingAssetDic = new Dictionary<uint, AsyncLoadResParam>();
+
+    //最长连续卡着加载时间，单位微秒
+    private const long MAXLOADRESTIME = 200000; 
+
+    // 协程加载资源队列
+    public void Init(MonoBehaviour mono)
+    {
+        for (int i = 0; i < (int)LoadResPriority.RES_NUM; i++)
+        {
+            // 为当前优先级创建异步加载队列
+            m_LoadingAssetList[i] = new List<AsyncLoadResParam>();
+        }
+        m_Startmono = mono;
+        m_Startmono.StartCoroutine(AsyncLoadCor());
+    }
 
     /// <summary>
     /// 缓存太多清理没有使用的资源
@@ -28,6 +117,7 @@ public class ResourceManager : BaseManager<ResourceManager>
         // }
     }
 
+    #region 资源同步加载
     /// <summary>
     /// 释放资源对象 分为两种情况：
     /// 1.如果资源对象的引用计数大于0，则将其引用计数减1，并将其最后使用时间更新为当前时间
@@ -231,7 +321,160 @@ public class ResourceManager : BaseManager<ResourceManager>
         }
         return item;    
     }
+    #endregion
+    
+    #region 资源异步加载
+    /// <summary>
+    /// 异步加载 仅仅是加载资源，不需要实例化的资源 例如 Texture、AudioClip、Sprite 等
+    /// </summary>
+    /// <param name="path"> 资源路径 </param>
+    /// <param name="dealFinish"> 加载完成回调 </param>
+    /// <param name="priority"> 加载优先级 </param>
+    /// <param name="param1"> 参数1 </param>
+    /// <param name="param2"> 参数2 </param>
+    /// <param name="param3"> 参数3 </param>
+    /// <param name="crc"> 资源路径的CRC </param>
+    public void AsyncLoadResource(string path, OnAsyncObjFinish dealFinish, LoadResPriority priority, object param1 = null, object param2 = null, object param3 = null, uint crc = 0)
+    {
+        // 如果CRC为0，则计算CRC
+        if (crc == 0)
+        {
+            crc = CRC32.Calculate(path);
+        }
 
+        ResouceItem item = GetCacheResouceItem(crc);
+        // 如果缓存中已经存在资源，则直接执行回调
+        if (item != null)
+        {
+            if (dealFinish != null)
+            {
+                dealFinish(path, item.m_Obj, param1, param2, param3);
+            }
+        
+            return;
+        }
+
+        // 如果缓存中不存在资源，则将加载请求添加到异步加载队列中
+        AsyncLoadResParam para = null;
+        if (!m_LoadingAssetDic.TryGetValue(crc, out para) || para == null)
+        {
+            // 该资源当前没有处于异步加载中
+            para = m_AsyncLoadResParamPool.Spawn(true);
+            para.m_Path = path;
+            para.m_Crc = crc;
+            para.m_Priority = priority;
+            m_LoadingAssetDic.Add(crc, para);
+            m_LoadingAssetList[(int)priority].Add(para);
+        }
+
+        //往回调列表里面添加回调
+        AsyncCallBack callBack = m_AsyncCallBackPool.Spawn(true);
+        callBack.m_DealFinish = dealFinish;
+        callBack.m_Param1 = param1;
+        callBack.m_Param2 = param2;
+        callBack.m_Param3 = param3;
+        para.m_CallBackList.Add(callBack);
+    }
+    //异步加载
+    IEnumerator AsyncLoadCor()
+    {
+        List<AsyncCallBack> callBackList = null;
+        // 记录上一次让出时间
+        long lastYiledTime = System.DateTime.Now.Ticks;
+        while (true)
+        {
+            bool haveYield = false;
+            // 遍历所有优先级的异步加载队列，按优先级从高到低依次处理
+            for (int i = 0; i < (int)LoadResPriority.RES_NUM; i++)
+            {
+                // 如果当前优先级的异步加载队列为空，则跳过
+                List<AsyncLoadResParam> loadingList = m_LoadingAssetList[i];
+                if (loadingList.Count <= 0)
+                    continue;
+
+                // 取出队列中的第一个加载请求
+                AsyncLoadResParam loadingItem = loadingList[0];
+                loadingList.RemoveAt(0);
+                callBackList = loadingItem.m_CallBackList;
+
+                //加载资源
+                Object obj = null;
+                ResouceItem item = null;
+                
+                #if UNITY_EDITOR
+                if (!m_LoadFormAssetBundle)
+                {
+                    // 通过 Editor API 加载
+                    obj = LoadAssetByEditor<Object>(loadingItem.m_Path);
+                    //模拟异步加载
+                    yield return new WaitForSeconds(0.5f);
+
+                    item = AssetBundleManager.Instance.FindResouceItme(loadingItem.m_Crc);
+                }
+                #endif
+                // 通过 AssetBundle 加载
+                if (obj == null)
+                {
+                    item = AssetBundleManager.Instance.LoadResouceAssetBundle(loadingItem.m_Crc);
+                    if (item != null && item.m_AssetBundle != null)
+                    {
+                        AssetBundleRequest abRequest = null;
+                        if (loadingItem.m_Sprite)
+                        {
+                            abRequest = item.m_AssetBundle.LoadAssetAsync<Sprite>(item.m_AssetName);
+                        }else
+                        {
+                            abRequest = item.m_AssetBundle.LoadAssetAsync(item.m_AssetName);   
+                        }
+                        // 等待异步加载完成
+                        yield return abRequest;
+                        if (abRequest.isDone)
+                        {
+                            obj = abRequest.asset;
+                        }
+                        lastYiledTime = System.DateTime.Now.Ticks;
+                    }
+                }
+                // 缓存资源对象
+                CacheResource(loadingItem.m_Path, ref item, loadingItem.m_Crc, obj,callBackList.Count);
+
+                // 执行回调
+                for (int j = 0; j < callBackList.Count; j++)
+                {
+                    AsyncCallBack callBack = callBackList[j];
+                    if (callBack != null && callBack.m_DealFinish != null)
+                    {
+                        callBack.m_DealFinish(loadingItem.m_Path, obj, callBack.m_Param1, callBack.m_Param2, callBack.m_Param3);
+                        callBack.m_DealFinish = null;
+                    }
+                    callBack.Reset();
+                    m_AsyncCallBackPool.Recycle(callBack);
+                }
+
+                //回收资源
+                obj = null;
+                callBackList.Clear();
+                m_LoadingAssetDic.Remove(loadingItem.m_Crc);
+
+                loadingItem.Reset();
+                m_AsyncLoadResParamPool.Recycle(loadingItem);
+
+                if (System.DateTime.Now.Ticks - lastYiledTime > MAXLOADRESTIME)
+                {
+                    yield return null;
+                    lastYiledTime = System.DateTime.Now.Ticks;
+                    haveYield = true;
+                }
+            }
+
+            if (!haveYield || System.DateTime.Now.Ticks - lastYiledTime > MAXLOADRESTIME)
+            {
+                lastYiledTime = System.DateTime.Now.Ticks;
+                yield return null;
+            }
+        }
+    }
+    #endregion
 }
 
 #region 双向链表
