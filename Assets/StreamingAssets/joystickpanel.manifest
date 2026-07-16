@@ -1,15 +1,15 @@
 ManifestFileVersion: 0
-CRC: 3701781241
+CRC: 434797016
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: b1caea377f60ebe1289bd96bace3ddc0
+    Hash: e833ea0126f35f082c34ce1c8c7e90a1
   TypeTreeHash:
     serializedVersion: 2
     Hash: 5c6a8bcc54b3b3e670187c4c30d50355
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: b1caea377f60ebe1289bd96bace3ddc0
+    Hash: e833ea0126f35f082c34ce1c8c7e90a1
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -35,4 +35,5 @@ SerializeReferenceClassIdentifiers:
   ClassName: UnityEngine.UI.MaskableGraphic/CullStateChangedEvent
 Assets:
 - Assets/Editor/ArtRes/ui/JoystickPanel.prefab
+- Assets/_Resource/UI/UIAtlas/main/main.png
 Dependencies: []

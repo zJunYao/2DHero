@@ -121,24 +121,6 @@ public class BundleEditor
     }
 
     /// <summary>
-    /// 检查指定的AssetBundle名称是否存在于依赖列表中
-    /// </summary>
-    /// <param name="abName">需要检查的AssetBundle名称</param>
-    /// <param name="strs">依赖AssetBundle名称列表</param>
-    /// <returns>如果依赖列表中包含指定的AssetBundle名称返回true，否则返回false</returns>
-    static bool ContainABName(string abName,string[] strs)
-    {
-        for(int i = 0; i < strs.Length; i++)
-        {
-            if(abName == strs[i])
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /// <summary>
     /// 验证资源路径是否在配置的有效路径列表中
     /// </summary>
     /// <param name="path">要验证的资源路径</param>
@@ -218,26 +200,57 @@ public class BundleEditor
     /// </remarks>
     static void DeleteAB()
     {
-        string [] allBundlePath = AssetDatabase.GetAllAssetBundleNames();
-        //删除AB包
-        DirectoryInfo diretion = new DirectoryInfo(m_BundleTargetPath);
-        FileInfo[] files = diretion.GetFiles("*", SearchOption.AllDirectories);
-        for(int i = 0; i < files.Length; i++)
+        DirectoryInfo directory = new DirectoryInfo(m_BundleTargetPath);
+        if (!directory.Exists)
         {
-            if(ContainABName(files[i].Name, allBundlePath) || files[i].Name.EndsWith(".meta"))
+            directory.Create();
+            return;
+        }
+
+        string[] allBundleNames = AssetDatabase.GetAllAssetBundleNames();
+        HashSet<string> validFileNames = new HashSet<string>(System.StringComparer.OrdinalIgnoreCase);
+        for (int i = 0; i < allBundleNames.Length; i++)
+        {
+            validFileNames.Add(allBundleNames[i]);
+            validFileNames.Add(allBundleNames[i] + ".manifest");
+        }
+
+        // BuildPipeline also creates a root manifest named after the output directory.
+        validFileNames.Add(directory.Name);
+        validFileNames.Add(directory.Name + ".manifest");
+
+        FileInfo[] files = directory.GetFiles("*", SearchOption.AllDirectories);
+        for (int i = 0; i < files.Length; i++)
+        {
+            FileInfo file = files[i];
+            if (file.Extension.Equals(".meta", System.StringComparison.OrdinalIgnoreCase) ||
+                validFileNames.Contains(file.Name))
             {
                 continue;
             }
-            else
+
+            Debug.Log("Delete stale AssetBundle output: " + file.Name);
+            string assetPath = FileUtil.GetProjectRelativePath(file.FullName);
+            bool deleted = !string.IsNullOrEmpty(assetPath) && AssetDatabase.DeleteAsset(assetPath);
+            if (!deleted && File.Exists(file.FullName))
             {
-                Debug.Log("此AB包被删或者改名了：" + files[i].Name);
-                if(File.Exists(files[i].FullName))
-                {
-                    File.Delete(files[i].FullName);
-                }
+                File.Delete(file.FullName);
+                string metaPath = file.FullName + ".meta";
+                if (File.Exists(metaPath))
+                    File.Delete(metaPath);
             }
         }
 
+        // Remove orphaned metadata left by previous versions of the cleanup code.
+        FileInfo[] metaFiles = directory.GetFiles("*.meta", SearchOption.AllDirectories);
+        for (int i = 0; i < metaFiles.Length; i++)
+        {
+            string assetPath = metaFiles[i].FullName.Substring(0, metaFiles[i].FullName.Length - ".meta".Length);
+            if (!File.Exists(assetPath) && !Directory.Exists(assetPath))
+                File.Delete(metaFiles[i].FullName);
+        }
+
+        AssetDatabase.Refresh();
     }
 
     static void WriteData(Dictionary<string, string> resPathDic)
