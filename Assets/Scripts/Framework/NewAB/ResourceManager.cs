@@ -548,67 +548,92 @@ public class ResourceManager : BaseManager<ResourceManager>
                 loadingList.RemoveAt(0);
                 callBackList = loadingItem.m_CallBackList;
 
-                //加载资源
-                Object obj = null;
-                ResouceItem item = null;
-                
+                try
+                {
+                    //加载资源
+                    Object obj = null;
+                    ResouceItem item = null;
+
 #if UNITY_EDITOR
-                if (!m_LoadFormAssetBundle)
-                {
-                    // 通过 Editor API 加载
-                    obj = LoadAssetByEditor<Object>(loadingItem.m_Path);
-                    //模拟异步加载
-                    yield return new WaitForSeconds(0.5f);
+                    if (!m_LoadFormAssetBundle)
+                    {
+                        // 通过 Editor API 加载
+                        obj = LoadAssetByEditor<Object>(loadingItem.m_Path);
+                        //模拟异步加载
+                        yield return new WaitForSeconds(0.5f);
 
-                    item = AssetBundleManager.Instance.FindResouceItme(loadingItem.m_Crc);
-                }
+                        item = AssetBundleManager.Instance.FindResouceItme(loadingItem.m_Crc);
+                    }
 #endif
-                // 通过 AssetBundle 加载
-                if (obj == null)
-                {
-                    item = AssetBundleManager.Instance.LoadResouceAssetBundle(loadingItem.m_Crc);
-                    if (item != null && item.m_AssetBundle != null)
+                    // 通过 AssetBundle 加载
+                    if (obj == null)
                     {
-                        AssetBundleRequest abRequest = null;
-                        if (loadingItem.m_Sprite)
+                        item = AssetBundleManager.Instance.LoadResouceAssetBundle(loadingItem.m_Crc);
+                        if (item != null && item.m_AssetBundle != null)
                         {
-                            abRequest = item.m_AssetBundle.LoadAssetAsync<Sprite>(item.m_AssetName);
-                        }else
-                        {
-                            abRequest = item.m_AssetBundle.LoadAssetAsync(item.m_AssetName);   
+                            AssetBundleRequest abRequest = null;
+                            if (loadingItem.m_Sprite)
+                            {
+                                abRequest = item.m_AssetBundle.LoadAssetAsync<Sprite>(item.m_AssetName);
+                            }else
+                            {
+                                abRequest = item.m_AssetBundle.LoadAssetAsync(item.m_AssetName);
+                            }
+                            // 等待异步加载完成
+                            yield return abRequest;
+                            if (abRequest.isDone)
+                            {
+                                obj = abRequest.asset;
+                            }
+                            lastYiledTime = System.DateTime.Now.Ticks;
                         }
-                        // 等待异步加载完成
-                        yield return abRequest;
-                        if (abRequest.isDone)
+                    }
+                    // 缓存资源对象
+                    CacheResource(loadingItem.m_Path, ref item, loadingItem.m_Crc, obj,callBackList.Count);
+
+                    // 执行回调
+                    for (int j = 0; j < callBackList.Count; j++)
+                    {
+                        AsyncCallBack callBack = callBackList[j];
+                        if (callBack == null)
                         {
-                            obj = abRequest.asset;
+                            continue;
                         }
-                        lastYiledTime = System.DateTime.Now.Ticks;
+
+                        try
+                        {
+                            callBack.m_DealFinish?.Invoke(loadingItem.m_Path, obj, callBack.m_Param1, callBack.m_Param2, callBack.m_Param3);
+                        }
+                        catch (System.Exception e)
+                        {
+                            Debug.LogException(e);
+                        }
+                        finally
+                        {
+                            callBack.Reset();
+                            m_AsyncCallBackPool.Recycle(callBack);
+                            callBackList[j] = null;
+                        }
                     }
                 }
-                // 缓存资源对象
-                CacheResource(loadingItem.m_Path, ref item, loadingItem.m_Crc, obj,callBackList.Count);
-
-                // 执行回调
-                for (int j = 0; j < callBackList.Count; j++)
+                finally
                 {
-                    AsyncCallBack callBack = callBackList[j];
-                    if (callBack != null && callBack.m_DealFinish != null)
+                    for (int j = 0; j < callBackList.Count; j++)
                     {
-                        callBack.m_DealFinish(loadingItem.m_Path, obj, callBack.m_Param1, callBack.m_Param2, callBack.m_Param3);
-                        callBack.m_DealFinish = null;
+                        AsyncCallBack callBack = callBackList[j];
+                        if (callBack != null)
+                        {
+                            callBack.Reset();
+                            m_AsyncCallBackPool.Recycle(callBack);
+                        }
                     }
-                    callBack.Reset();
-                    m_AsyncCallBackPool.Recycle(callBack);
+
+                    callBackList.Clear();
+                    m_LoadingAssetDic.Remove(loadingItem.m_Crc);
+
+                    loadingItem.Reset();
+                    m_AsyncLoadResParamPool.Recycle(loadingItem);
                 }
-
-                //回收资源
-                obj = null;
-                callBackList.Clear();
-                m_LoadingAssetDic.Remove(loadingItem.m_Crc);
-
-                loadingItem.Reset();
-                m_AsyncLoadResParamPool.Recycle(loadingItem);
 
                 if (System.DateTime.Now.Ticks - lastYiledTime > MAXLOADRESTIME)
                 {
