@@ -157,7 +157,7 @@ public class AssetBundleManager : BaseManager<AssetBundleManager>
     /// 释放AB包
     /// </summary>
     /// <param name="name">AB包名称</param>
-    private void UnLoadAssetBundle(string name)
+    private bool UnLoadAssetBundle(string name)
     {
         AssetBundleItem item = null;
         uint crc = CRC32.Calculate(name);
@@ -170,6 +170,22 @@ public class AssetBundleManager : BaseManager<AssetBundleManager>
                 item.Rest();
                 m_AssetBundleItemPool.Recycle(item);
                 m_AssetBundleItemDic.Remove(crc);
+                ClearAssetBundleHandles(name);
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private void ClearAssetBundleHandles(string name)
+    {
+        foreach (ResouceItem resouceItem in m_ResouceItemDic.Values)
+        {
+            if (resouceItem != null &&
+                string.Equals(resouceItem.m_ABName, name, System.StringComparison.Ordinal))
+            {
+                resouceItem.m_AssetBundle = null;
             }
         }
     }

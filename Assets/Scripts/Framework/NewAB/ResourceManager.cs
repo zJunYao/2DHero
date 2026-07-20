@@ -221,6 +221,8 @@ public class ResourceManager : BaseManager<ResourceManager>
         }
         //释放AssetBundle
         AssetBundleManager.Instance.ReleaseAsset(item);
+        item.m_AssetBundle = null;
+        item.m_Guid = 0;
         //清空资源对象引用
         if (item.m_Obj != null)
         {
