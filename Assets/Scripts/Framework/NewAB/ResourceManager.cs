@@ -81,6 +81,8 @@ public class ResourceManager : BaseManager<ResourceManager>
 
     //MonoBehaviour对象，用于协程的启动和停止
     protected MonoBehaviour m_Startmono;
+    private bool m_Initialized;
+    private Coroutine m_AsyncLoadCoroutine;
     // 正在异步加载的资源列表
     protected List<AsyncLoadResParam>[] m_LoadingAssetList = new List<AsyncLoadResParam>[(int)LoadResPriority.RES_NUM];
     // 记录正在异步加载资源的字典
@@ -92,13 +94,30 @@ public class ResourceManager : BaseManager<ResourceManager>
     // 协程加载资源队列
     public void Init(MonoBehaviour mono)
     {
+        if (m_Initialized)
+        {
+            if (m_Startmono != mono)
+            {
+                Debug.LogWarning("ResourceManager 已初始化，禁止更换 MonoBehaviour 宿主。");
+            }
+
+            return;
+        }
+
+        if (mono == null)
+        {
+            Debug.LogError("ResourceManager.Init mono is null");
+            return;
+        }
+
         for (int i = 0; i < (int)LoadResPriority.RES_NUM; i++)
         {
             // 为当前优先级创建异步加载队列
             m_LoadingAssetList[i] = new List<AsyncLoadResParam>();
         }
         m_Startmono = mono;
-        m_Startmono.StartCoroutine(AsyncLoadCor());
+        m_AsyncLoadCoroutine = m_Startmono.StartCoroutine(AsyncLoadCor());
+        m_Initialized = true;
     }
 
     /// <summary>
