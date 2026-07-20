@@ -112,7 +112,7 @@ public class BundleEditor
     {
         for(int i = 0; i < m_AllFilrAB.Count; i++)
         {
-            if (path.Contains(m_AllFilrAB[i]) && (path.Replace(m_AllFilrAB[i],"")[0] != '/') || path == m_AllFilrAB[i])
+            if (IsSameOrChildPath(path, m_AllFilrAB[i]))
             {
                 return true;
             }
@@ -129,13 +129,27 @@ public class BundleEditor
     {
         for(int i = 0; i < m_ConfigFil.Count; i++)
         {
-            if(path.Contains(m_ConfigFil[i]))
+            if(IsSameOrChildPath(path, m_ConfigFil[i]))
             {
                 //预设 和文件名下的资源
                 return true;
             }
         }
         return false;
+    }
+
+    private static bool IsSameOrChildPath(string path, string directory)
+    {
+        if (string.IsNullOrEmpty(path) || string.IsNullOrEmpty(directory))
+        {
+            return false;
+        }
+
+        path = path.Replace('\\', '/').TrimEnd('/');
+        directory = directory.Replace('\\', '/').TrimEnd('/');
+
+        return path.Equals(directory, System.StringComparison.Ordinal) ||
+               path.StartsWith(directory + "/", System.StringComparison.Ordinal);
     }
 
     static void SetABName(string name ,string path)
