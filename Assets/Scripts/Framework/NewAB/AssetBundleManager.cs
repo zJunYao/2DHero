@@ -21,43 +21,54 @@ public class AssetBundleManager : BaseManager<AssetBundleManager>
     {
         m_ResouceItemDic.Clear();
         string configPath = Application.streamingAssetsPath + "/abconfig";
-        AssetBundle configAB = AssetBundle.LoadFromFile(configPath);
-        if (configAB == null)
+        AssetBundle configAB = null;
+        try
         {
-            Debug.LogError("Failed to load AssetBundleConfig! Path: " + configPath);
-            return false;
-        }
-
-        TextAsset textAsset = configAB.LoadAsset<TextAsset>("assetbundleconfig");
-        if (textAsset == null)
-        {
-            Debug.LogError("AssetBundleConfig is no exist!");
-            return false;
-        }
-
-        MemoryStream stream = new MemoryStream(textAsset.bytes);
-        BinaryFormatter bf = new BinaryFormatter();
-        AssetBundleConfig ab_config = (AssetBundleConfig)bf.Deserialize(stream);
-        stream.Close();
-    
-        for (int i = 0; i < ab_config.ABList.Count; i++)
-        {
-            ABBase abBase = ab_config.ABList[i];
-            ResouceItem item = new ResouceItem();
-            item.m_Crc = abBase.Crc;
-            item.m_AssetName = abBase.AssetName;
-            item.m_ABName = abBase.ABName;
-            item.m_DependAssetBundle = abBase.ABDependce;
-            if (m_ResouceItemDic.ContainsKey(item.m_Crc))
+            configAB = AssetBundle.LoadFromFile(configPath);
+            if (configAB == null)
             {
-                Debug.LogError("重复的Crc 资源名:" + item.m_AssetName + " ab包名: " + item.m_ABName);
+                Debug.LogError("Failed to load AssetBundleConfig! Path: " + configPath);
+                return false;
             }
-            else
+
+            TextAsset textAsset = configAB.LoadAsset<TextAsset>("assetbundleconfig");
+            if (textAsset == null)
             {
-                m_ResouceItemDic.Add(item.m_Crc, item);
+                Debug.LogError("AssetBundleConfig is no exist!");
+                return false;
+            }
+
+            MemoryStream stream = new MemoryStream(textAsset.bytes);
+            BinaryFormatter bf = new BinaryFormatter();
+            AssetBundleConfig ab_config = (AssetBundleConfig)bf.Deserialize(stream);
+            stream.Close();
+
+            for (int i = 0; i < ab_config.ABList.Count; i++)
+            {
+                ABBase abBase = ab_config.ABList[i];
+                ResouceItem item = new ResouceItem();
+                item.m_Crc = abBase.Crc;
+                item.m_AssetName = abBase.AssetName;
+                item.m_ABName = abBase.ABName;
+                item.m_DependAssetBundle = abBase.ABDependce;
+                if (m_ResouceItemDic.ContainsKey(item.m_Crc))
+                {
+                    Debug.LogError("重复的Crc 资源名:" + item.m_AssetName + " ab包名: " + item.m_ABName);
+                }
+                else
+                {
+                    m_ResouceItemDic.Add(item.m_Crc, item);
+                }
+            }
+            return true;
+        }
+        finally
+        {
+            if (configAB != null)
+            {
+                configAB.Unload(false);
             }
         }
-        return true;
     }
 
     /// <summary>
