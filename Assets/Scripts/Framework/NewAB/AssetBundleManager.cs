@@ -114,10 +114,12 @@ public class AssetBundleManager : BaseManager<AssetBundleManager>
             if (assetBundle == null)
             {
                 Debug.LogError("Load AssetBundle Error:" + fullPath);
+                return null;
             }
+
             item = m_AssetBundleItemPool.Spawn(true);
             item.assetBundle = assetBundle;
-            item.RefCount++;
+            item.RefCount = 1;
             m_AssetBundleItemDic.Add(crc, item);
         }
         else
