@@ -234,6 +234,24 @@ public class ResourceManager : BaseManager<ResourceManager>
         }
     }
 
+    private bool TryDecreaseRef(ResouceItem item, string source)
+    {
+        if (item == null)
+        {
+            return false;
+        }
+
+        if (item.RefCount <= 0)
+        {
+            Debug.LogError("资源重复释放，Crc=" + item.m_Crc + ", Source=" + source);
+            return false;
+        }
+
+        item.RefCount--;
+        item.m_LastUseTime = Time.realtimeSinceStartup;
+        return true;
+    }
+
 #if UNITY_EDITOR
     /// <summary>
     /// 通过 Editor API 加载资源
@@ -336,8 +354,11 @@ public class ResourceManager : BaseManager<ResourceManager>
             return false;
         }
 
-        //每执行一次释放，引用计数减一
-        item.RefCount--;
+        if (!TryDecreaseRef(item, obj.name))
+        {
+            return false;
+        }
+
         DestoryResouceItme(item, destoryObj);
         return true;
     }
@@ -362,8 +383,11 @@ public class ResourceManager : BaseManager<ResourceManager>
             Debug.LogError("AssetDic里不存在该资源：" + path + " 可能释放了多次");
             return false;
         }
-        //每执行一次释放，引用计数减一
-        item.RefCount--;
+        if (!TryDecreaseRef(item, path))
+        {
+            return false;
+        }
+
         DestoryResouceItme(item, destoryObj);
         return true;
     }
