@@ -5,4 +5,6 @@
   <ABList Path="Assets/Editor/ArtRes/ui/JoystickPanel.prefab" Crc="2721028109" ABName="joystickpanel" AssetName="JoystickPanel.prefab" />
   <ABList Path="Assets/Editor/ArtRes/music/Begin.mp3" Crc="817479806" ABName="music" AssetName="Begin.mp3" />
   <ABList Path="Assets/Editor/ArtRes/sound/hit_4.mp3" Crc="1722624665" ABName="sound" AssetName="hit_4.mp3" />
+  <ABList Path="Assets/_Resource/model/mount/zq32/Prefab/zq32_1.prefab" Crc="402929092" ABName="zq32_1" AssetName="zq32_1.prefab" />
+  <ABList Path="Assets/_Resource/model/mount/zq67/Prefab/zq67_1.prefab" Crc="1608314437" ABName="zq67_1" AssetName="zq67_1.prefab" />
 </AssetBundleConfig>

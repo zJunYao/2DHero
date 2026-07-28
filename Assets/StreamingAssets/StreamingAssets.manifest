@@ -1,5 +1,5 @@
 ManifestFileVersion: 0
-CRC: 1165719517
+CRC: 192248865
 AssetBundleManifest:
   AssetBundleInfos:
     Info_0:
@@ -16,4 +16,10 @@ AssetBundleManifest:
       Dependencies: {}
     Info_4:
       Name: joystickpanel
+      Dependencies: {}
+    Info_5:
+      Name: zq32_1
+      Dependencies: {}
+    Info_6:
+      Name: zq67_1
       Dependencies: {}

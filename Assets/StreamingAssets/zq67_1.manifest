@@ -1,0 +1,51 @@
+ManifestFileVersion: 0
+CRC: 1118653323
+Hashes:
+  AssetFileHash:
+    serializedVersion: 2
+    Hash: efe2a15ada302a70c91d1280a51393d8
+  TypeTreeHash:
+    serializedVersion: 2
+    Hash: 60e85f20dfc13800734f9d0dfd39173d
+  IncrementalBuildHash:
+    serializedVersion: 2
+    Hash: efe2a15ada302a70c91d1280a51393d8
+HashAppended: 0
+ClassTypes:
+- Class: 1
+  Script: {instanceID: 0}
+- Class: 4
+  Script: {instanceID: 0}
+- Class: 21
+  Script: {instanceID: 0}
+- Class: 28
+  Script: {instanceID: 0}
+- Class: 43
+  Script: {instanceID: 0}
+- Class: 48
+  Script: {instanceID: 0}
+- Class: 74
+  Script: {instanceID: 0}
+- Class: 90
+  Script: {instanceID: 0}
+- Class: 91
+  Script: {instanceID: 0}
+- Class: 95
+  Script: {instanceID: 0}
+- Class: 137
+  Script: {instanceID: 0}
+SerializeReferenceClassIdentifiers: []
+Assets:
+- Assets/_Resource/model/mount/zq67/Animation/run.anim
+- Assets/_Resource/Shader/ModelEffect/RimLight2.shader
+- Assets/_Resource/model/mount/zq67/Model/zq67_1.FBX
+- Assets/_Resource/Shader/Character/Texture.shader
+- Assets/_Resource/model/mount/zq67/Animation/stand.anim
+- Assets/_Resource/model/mount/zq67/Model/Materials/zq67_1.mat
+- Assets/_Resource/model/mount/zq67/Animation/ui.anim
+- Assets/_Resource/model/mount/zq67/Animation/ui_stand.anim
+- Assets/_Resource/model/mount/zq67/Texture/zq67_1.png
+- Assets/_Resource/model/mount/zq67/Animation/zq67.controller
+- Assets/_Resource/model/mount/zq67/Model/Materials/zq67_1_f.mat
+- Assets/_Resource/model/mount/zq67/Prefab/zq67_1.prefab
+Dependencies: []

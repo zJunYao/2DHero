@@ -2,6 +2,32 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+public class ResouceObj
+{
+    // 路径对应的 CRC
+    public uint m_Crc = 0;
+    //ResourceManager 管理的资源信息块，其中包含原始资源对象	
+    public ResouceItem m_ResItem = null;
+    // 实例化出来的 GameObject
+    public GameObject m_CloneObj = null;
+    // 切换场景时是否清理
+    public bool m_bClear = true;
+    // 对象唯一 ID
+    public int m_Guid = 0;
+    // 是否已经放回对象池
+    public bool m_Already = false;
+ 
+    public void Reset()
+    {
+        m_Crc = 0;
+        m_CloneObj = null;
+        m_bClear = true;
+        m_Guid = 0;
+        m_ResItem = null;
+        m_Already = false;
+    }
+}
+
 public enum LoadResPriority
 {
     RES_HIGHT = 0, // 最高优先级
@@ -176,7 +202,7 @@ public class ResourceManager : BaseManager<ResourceManager>
         if (!m_LoadFormAssetBundle)
         {
             // 通过 Editor API 加载
-            item = AssetBundleManager.Instance.FindResouceItme(crc);
+            item = AssetBundleManager.Instance.FindResouceItem(crc);
             if(item.m_Obj != null)
             {
                 obj = item.m_Obj;
@@ -311,7 +337,7 @@ public class ResourceManager : BaseManager<ResourceManager>
         if (!m_LoadFormAssetBundle)
         {
             // 通过 Editor API 加载
-            item = AssetBundleManager.Instance.FindResouceItme(crc);
+            item = AssetBundleManager.Instance.FindResouceItem(crc);
             if(item.m_Obj != null)
             {
                 obj = item.m_Obj as T;
@@ -562,7 +588,7 @@ public class ResourceManager : BaseManager<ResourceManager>
                         //模拟异步加载
                         yield return new WaitForSeconds(0.5f);
 
-                        item = AssetBundleManager.Instance.FindResouceItme(loadingItem.m_Crc);
+                        item = AssetBundleManager.Instance.FindResouceItem(loadingItem.m_Crc);
                     }
 #endif
                     // 通过 AssetBundle 加载
@@ -650,6 +676,155 @@ public class ResourceManager : BaseManager<ResourceManager>
             }
         }
     }
+    #endregion
+
+    #region 资源实例化同步加载
+    /// <summary>
+    /// 根据resobj增加资源引用计数
+    /// </summary>
+    /// <param name="crc"></param>
+    /// <param name="count"></param>
+    /// <returns></returns>
+    public int IncreaseResouceRef(ResouceObj resObj, int count = 1)
+    {
+        return resObj != null ? IncreaseResouceRef(resObj.m_Crc, count) : 0;
+    }
+    /// <summary>
+    /// 根据path增加资源引用计数
+    /// </summary>
+    /// <param name="crc"></param>
+    /// <param name="count"></param>
+    /// <returns></returns>
+    public int IncreaseResouceRef(uint crc = 0, int count = 1)
+    {
+        ResouceItem item = null;
+        if (!AssetDic.TryGetValue(crc, out item) || item == null)
+        {
+            return 0;
+        }
+    
+        item.RefCount += count;
+        item.m_LastUseTime = Time.realtimeSinceStartup;
+        return item.RefCount;
+    }
+    /// <summary>
+    /// 根据resobj减少资源引用计数
+    /// </summary>
+    /// <param name="resObj"></param>
+    /// <param name="count"></param>
+    /// <returns></returns>
+    public int DecreaseResoucerRef(ResouceObj resObj, int count = 1)
+    {
+        return resObj != null ? DecreaseResoucerRef(resObj.m_Crc, count) : 0;
+    }
+    /// <summary>
+    /// 根据path减少资源引用计数
+    /// </summary>
+    /// <param name="crc"></param>
+    /// <param name="count"></param>
+    /// <returns></returns>
+    public int DecreaseResoucerRef(uint crc, int count = 1)
+    {
+        ResouceItem item = null;
+    
+        if (!AssetDic.TryGetValue(crc, out item) || item == null)
+        {
+            return 0;
+        }
+    
+        item.RefCount -= count;
+        return item.RefCount;
+    }
+
+    /// <summary>
+    /// ResouceObj 资源加载
+    /// </summary>
+    /// <param name="path"></param>
+    /// <param name="resObj"></param>
+    /// <returns></returns>
+    public ResouceObj LoadResource(string path, ResouceObj resObj)
+    {
+        if (resObj == null)
+        {
+            return null;
+        }
+
+        uint crc = resObj.m_Crc == 0 ? CRC32.Calculate(path) : resObj.m_Crc;
+        // 先尝试从缓存中获取资源对象
+        ResouceItem item = GetCacheResouceItem(crc);
+        if (item != null)
+        {
+            resObj.m_ResItem = item;
+            return resObj;
+        }
+
+        Object obj = null;
+#if UNITY_EDITOR
+        if (!m_LoadFormAssetBundle)
+        {
+            item = AssetBundleManager.Instance.FindResouceItem(crc);
+            if (item.m_Obj != null)
+            {
+                obj = item.m_Obj as Object;
+            }
+            else
+            {
+                obj = LoadAssetByEditor<Object>(path);
+            }
+        }
+#endif
+
+        if (obj == null)
+        {
+            item = AssetBundleManager.Instance.LoadResouceAssetBundle(crc);
+        
+            if (item != null && item.m_AssetBundle != null)
+            {
+                if (item.m_Obj != null)
+                {
+                    obj = item.m_Obj as Object;
+                }
+                else
+                {
+                    obj = item.m_AssetBundle.LoadAsset<Object>(item.m_AssetName);
+                }
+            }
+        }
+
+        CacheResource(path, ref item, crc, obj);
+ 
+        resObj.m_ResItem = item;
+        item.m_Clear = resObj.m_bClear;
+        
+        return resObj;
+    }
+
+    /// <summary>
+    /// 实例化资源对象的资源卸载
+    /// </summary>
+    /// <param name="resObj">实例化资源对象</param>
+    /// <param name="destoryObj">是否销毁资源对象</param>
+    /// <returns></returns>
+    public bool ReleaseResouce(ResouceObj resObj, bool destoryObj = false)
+    {
+        if (resObj == null)
+            return false;
+ 
+        ResouceItem item = null;
+    
+        if (!AssetDic.TryGetValue(resObj.m_Crc, out item) || item == null)
+        {
+            Debug.LogError("AssetDic里不存在该资源: " + resObj.m_CloneObj.name + " 可能释放了多次");
+        }
+    
+        GameObject.Destroy(resObj.m_CloneObj);
+    
+        item.RefCount--;
+        DestoryResouceItme(item, destoryObj);
+    
+        return true;
+    }
+
     #endregion
 }
 

@@ -6,10 +6,13 @@ public class gamestart : MonoBehaviour
 {
     public AudioSource audioSource;
     private AudioClip clip;
+    private GameObject obj;
     void Awake()
-    {
+    {   
+        GameObject.DontDestroyOnLoad(this.gameObject);
         AssetBundleManager.Instance.LoadAssetBundleConfig();
         ResourceManager.Instance.Init(this);
+        ObjectManager.Instance.Init(transform.Find("RecyclePoolTrs"), transform.Find("SceneTrs"));
     }
     // Start is called before the first frame update
     void Start()
@@ -26,24 +29,27 @@ public class gamestart : MonoBehaviour
         // }, LoadResPriority.RES_HIGHT, false);
 
 
-        const string path = "Assets/Editor/ArtRes/music/Begin.mp3";
+        // const string path = "Assets/Editor/ArtRes/music/Begin.mp3";
 
-        ResourceManager.Instance.PreloadRes(path);
+        // ResourceManager.Instance.PreloadRes(path);
 
-        uint crc = CRC32.Calculate(path);
-        bool success =
-            ResourceManager.Instance.AssetDic.TryGetValue(crc, out ResouceItem item) &&
-            item != null &&
-            item.m_Obj is AudioClip;
+        // uint crc = CRC32.Calculate(path);
+        // bool success =
+        //     ResourceManager.Instance.AssetDic.TryGetValue(crc, out ResouceItem item) &&
+        //     item != null &&
+        //     item.m_Obj is AudioClip;
 
-        if (success)
-        {
-            Debug.Log($"预加载成功：{path}");
-        }
-        else
-        {
-            Debug.LogError($"预加载失败：{path}");
-        }
+        // if (success)
+        // {
+        //     Debug.Log($"预加载成功：{path}");
+        // }
+        // else
+        // {
+        //     Debug.LogError($"预加载失败：{path}");
+        // }
+
+        //-----------------------------------------------------------------------------------------
+        obj = ObjectManager.Instance.InstantiateObject("Assets/_Resource/model/mount/zq67/Prefab/zq67_1.prefab", true, false);
     }
 
     // Update is called once per frame
@@ -69,6 +75,13 @@ public class gamestart : MonoBehaviour
             Debug.Log($"加载耗时" + (System.DateTime.Now.Ticks - startTime));
             audioSource.clip = clip;
             audioSource.Play();
+        }else if (Input.GetKeyDown(KeyCode.F))
+        {
+            ObjectManager.Instance.ReleaseObject(obj,0, true);
+        }else if (Input.GetKeyDown(KeyCode.G))
+        {
+            ObjectManager.Instance.ReleaseObject(obj);
+            obj = null;
         }
     }
 

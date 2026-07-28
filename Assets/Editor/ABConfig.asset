@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_AllPrefabPath:
   - Assets/Editor/ArtRes/ui
+  - Assets/_Resource/model/mount
   m_FileDirAB:
   - ABName: abconfig
     Path: Assets/Editor/Tool/AB/Data

@@ -206,7 +206,7 @@ public class AssetBundleManager : BaseManager<AssetBundleManager>
     /// </summary>
     /// <param name="crc">资源路径的CRC</param>
     /// <returns></returns>
-    public ResouceItem FindResouceItme(uint crc)
+    public ResouceItem FindResouceItem(uint crc)
     {
         return m_ResouceItemDic[crc];
     }

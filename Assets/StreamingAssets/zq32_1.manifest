@@ -1,0 +1,44 @@
+ManifestFileVersion: 0
+CRC: 92185902
+Hashes:
+  AssetFileHash:
+    serializedVersion: 2
+    Hash: da57be84859057003d71125cbda438d0
+  TypeTreeHash:
+    serializedVersion: 2
+    Hash: 9a86897a40af6e6d0d9ec182311314cc
+  IncrementalBuildHash:
+    serializedVersion: 2
+    Hash: da57be84859057003d71125cbda438d0
+HashAppended: 0
+ClassTypes:
+- Class: 1
+  Script: {instanceID: 0}
+- Class: 4
+  Script: {instanceID: 0}
+- Class: 21
+  Script: {instanceID: 0}
+- Class: 43
+  Script: {instanceID: 0}
+- Class: 48
+  Script: {instanceID: 0}
+- Class: 74
+  Script: {instanceID: 0}
+- Class: 90
+  Script: {instanceID: 0}
+- Class: 91
+  Script: {instanceID: 0}
+- Class: 95
+  Script: {instanceID: 0}
+- Class: 137
+  Script: {instanceID: 0}
+SerializeReferenceClassIdentifiers: []
+Assets:
+- Assets/_Resource/model/mount/zq32/Animation/ui_stand.anim
+- Assets/_Resource/model/mount/zq32/Animation/zq32.controller
+- Assets/_Resource/model/mount/zq32/Prefab/zq32_1.prefab
+- Assets/_Resource/model/mount/zq32/Animation/stand.anim
+- Assets/_Resource/model/mount/zq32/Animation/run.anim
+- Assets/_Resource/model/mount/zq32/Animation/ui.anim
+- Assets/_Resource/model/mount/zq32/Model/zq32_1.FBX
+Dependencies: []
