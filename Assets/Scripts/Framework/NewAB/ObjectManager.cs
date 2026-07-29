@@ -103,6 +103,102 @@ public class ObjectManager : BaseManager<ObjectManager>
     
         return resouceObj.m_CloneObj;
     }
+   
+   /// <summary>
+   /// 异步加载实例化的gameobject对象（池对象）
+   /// </summary>
+   /// <param name="path">资源路径</param>
+   /// <param name="dealFinish">异步实例化完成回调 </param>
+   /// <param name="priority">异步加载优先级</param>
+   /// <param name="setSceneObject">是否将实例挂到场景节点 SceneTrs下</param>
+   /// <param name="param1">回调透传参数 1 </param>
+   /// <param name="param2"> 回调透传参数 2</param>
+   /// <param name="param3"> 回调透传参数 3</param>
+   /// <param name="bClear">是否参与场景清理，默认值为 true </param>
+    public void InstantiateObjectAsync(string path, OnAsyncObjFinish dealFinish, LoadResPriority priority, bool setSceneObject = false, object param1 = null, object param2 = null, object param3 = null, bool bClear = true)
+    {
+        if (string.IsNullOrEmpty(path))
+        {
+            return;
+        }
+
+        uint crc = CRC32.Calculate(path);
+        ResouceObj resObj = GetObjectFromPool(crc);
+        // 对象池中有可用的对象
+        if (resObj != null)
+        {
+            if (setSceneObject)
+            {
+                resObj.m_CloneObj.transform.SetParent(SceneTrs, false);
+            }
+        
+            if (dealFinish != null)
+            {
+                dealFinish(path, resObj.m_CloneObj, param1, param2, param3);
+            }
+            return;
+        }
+
+        //创建 ResouceObj 对象
+        resObj = m_ResourceObjClassPool.Spawn(true);
+        resObj.m_Crc = crc;
+        resObj.m_SetSceneParent = setSceneObject;
+        resObj.m_bClear = bClear;
+        resObj.m_DealFinish = dealFinish;
+        resObj.m_Param1 = param1;
+        resObj.m_Param2 = param2;
+        resObj.m_Param3 = param3;
+        //调用 ResourceManager 加载方法
+        ResourceManager.Instance.AsyncLoadResource(path, resObj, OnLoadResouceObjFinish, priority);
+    }
+
+    /// <summary>
+    /// 加载资源完成回调
+    /// </summary>
+    /// <param name="path">路径</param>
+    /// <param name="resObj">中间类</param>
+    /// <param name="param1">参数1</param>
+    /// <param name="param2">参数2</param>
+    /// <param name="param3">参数3</param>
+    void OnLoadResouceObjFinish(string path, ResouceObj resObj, object param1 = null, object param2 = null, object param3 = null)
+    {   
+        if (resObj == null)
+        {
+            return;
+        }
+
+        if (resObj.m_ResItem.m_Obj == null)
+        {
+#if UNITY_EDITOR
+            Debug.LogError("异步资源加载的资源为空: " + path);
+#endif
+        }
+        else
+        {
+            // 实例化
+            resObj.m_CloneObj = GameObject.Instantiate(resObj.m_ResItem.m_Obj) as GameObject;
+        }
+        
+        //按需挂载场景父节点
+        if (resObj.m_CloneObj != null && resObj.m_SetSceneParent)
+        {
+            resObj.m_CloneObj.transform.SetParent(SceneTrs, false);
+        }
+
+        if (resObj.m_DealFinish != null)
+        {
+            //登记实例对象
+            int tempID = resObj.m_CloneObj.GetInstanceID();
+            if (!m_ResouceObjDic.ContainsKey(tempID))
+            {
+                m_ResouceObjDic.Add(tempID, resObj);
+            }
+            //执行最外层回调
+            resObj.m_DealFinish(path, resObj.m_CloneObj, resObj.m_Param1, resObj.m_Param2, resObj.m_Param3);
+        }
+    }
+
+   
     /// <summary>
     /// 释放对象
     /// </summary>

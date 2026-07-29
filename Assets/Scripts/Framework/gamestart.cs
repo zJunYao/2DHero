@@ -6,7 +6,7 @@ public class gamestart : MonoBehaviour
 {
     public AudioSource audioSource;
     private AudioClip clip;
-    private GameObject obj;
+    private GameObject m_obj;
     void Awake()
     {   
         GameObject.DontDestroyOnLoad(this.gameObject);
@@ -49,7 +49,14 @@ public class gamestart : MonoBehaviour
         // }
 
         //-----------------------------------------------------------------------------------------
-        obj = ObjectManager.Instance.InstantiateObject("Assets/_Resource/model/mount/zq67/Prefab/zq67_1.prefab", true, false);
+        //obj = ObjectManager.Instance.InstantiateObject("Assets/_Resource/model/mount/zq67/Prefab/zq67_1.prefab", true, false);
+        ObjectManager.Instance.InstantiateObjectAsync("Assets/_Resource/model/mount/zq67/Prefab/zq67_1.prefab",OnLoadFinish, LoadResPriority.RES_HIGHT,true);
+    }
+
+    void OnLoadFinish( string path, Object obj, object param1 = null, object param2 = null , object param3 = null)
+    {
+        m_obj = obj as GameObject;
+        Debug.Log("异步加载完成");
     }
 
     // Update is called once per frame
@@ -77,11 +84,15 @@ public class gamestart : MonoBehaviour
             audioSource.Play();
         }else if (Input.GetKeyDown(KeyCode.F))
         {
-            ObjectManager.Instance.ReleaseObject(obj,0, true);
+            ObjectManager.Instance.ReleaseObject(m_obj,0, true);
+            m_obj = null;
         }else if (Input.GetKeyDown(KeyCode.G))
         {
-            ObjectManager.Instance.ReleaseObject(obj);
-            obj = null;
+            ObjectManager.Instance.ReleaseObject(m_obj);
+            m_obj = null;
+        }else if (Input.GetKeyDown(KeyCode.H))
+        {
+           ObjectManager.Instance.InstantiateObjectAsync("Assets/_Resource/model/mount/zq67/Prefab/zq67_1.prefab",OnLoadFinish, LoadResPriority.RES_HIGHT,true);
         }
     }
 

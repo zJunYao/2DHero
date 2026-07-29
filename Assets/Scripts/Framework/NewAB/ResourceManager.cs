@@ -16,6 +16,14 @@ public class ResouceObj
     public int m_Guid = 0;
     // 是否已经放回对象池
     public bool m_Already = false;
+    // 是否设置场景对象
+    public bool m_SetSceneParent = false;
+    //实例化资源完成回调
+    public OnAsyncObjFinish m_DealFinish = null;
+
+    public object m_Param1 = null;
+    public object m_Param2 = null;
+    public object m_Param3 = null;
  
     public void Reset()
     {
@@ -25,6 +33,12 @@ public class ResouceObj
         m_Guid = 0;
         m_ResItem = null;
         m_Already = false;
+        m_SetSceneParent = false;
+        m_DealFinish = null;
+
+        m_Param1 = null;
+        m_Param2 = null;
+        m_Param3 = null;
     }
 }
 
@@ -64,8 +78,11 @@ public class AsyncLoadResParam
 /// </summary>
 public class AsyncCallBack
 {
-    // 加载完成回调
-    public OnAsyncObjFinish m_DealFinish = null;
+    // 资源加载完成回调
+    public OnAsyncObjFinish m_DealObjFinish = null;
+    //加实例化资源完成回调
+    public OnAsyncFinsih m_DealFinish = null;
+    public ResouceObj m_ResObj = null;
     // 回调参数1
     public object m_Param1 = null;
     // 回调参数2
@@ -74,7 +91,9 @@ public class AsyncCallBack
     public object m_Param3 = null;
     public void Reset()
     {
+        m_DealObjFinish = null;
         m_DealFinish = null;
+        m_ResObj = null;
         m_Param1 = null;
         m_Param2 = null;
         m_Param3 = null;
@@ -89,13 +108,17 @@ public class AsyncCallBack
 /// <param name="param1"></param>
 /// <param name="param2"></param>
 /// <param name="param3"></param>
+
+//资源加载完成回调
 public delegate void OnAsyncObjFinish(string path, Object obj, object param1 = null, object param2 = null, object param3 = null);
+//实例化资源加载完成回调
+public delegate void OnAsyncFinsih(string path, ResouceObj resObj, object param1 = null, object param2 = null, object param3 = null);
 
 public class ResourceManager : BaseManager<ResourceManager>
 {
     private ResourceManager() { }
     // 是否从AssetBundle加载资源，true表示从AssetBundle加载，false表示从Editor API加载
-    public bool m_LoadFormAssetBundle = true;
+    public bool m_LoadFormAssetBundle = false;
     //缓存已加载资源字典
     public Dictionary<uint, ResouceItem> AssetDic { get; set; } = new Dictionary<uint, ResouceItem>();
     //缓存引用计数为0的资源对象，达到最大缓存数量时，释放最久未使用的资源对象
@@ -546,7 +569,7 @@ public class ResourceManager : BaseManager<ResourceManager>
 
         //往回调列表里面添加回调
         AsyncCallBack callBack = m_AsyncCallBackPool.Spawn(true);
-        callBack.m_DealFinish = dealFinish;
+        callBack.m_DealObjFinish = dealFinish;
         callBack.m_Param1 = param1;
         callBack.m_Param2 = param2;
         callBack.m_Param3 = param3;
@@ -628,7 +651,30 @@ public class ResourceManager : BaseManager<ResourceManager>
 
                         try
                         {
-                            callBack.m_DealFinish?.Invoke(loadingItem.m_Path, obj, callBack.m_Param1, callBack.m_Param2, callBack.m_Param3);
+                            // ObjectManager 的实例化资源请求
+                            if (callBack.m_DealFinish != null &&
+                                callBack.m_ResObj != null)
+                            {
+                                ResouceObj resObj = callBack.m_ResObj;
+                                resObj.m_ResItem = item;
+
+                                callBack.m_DealFinish.Invoke(
+                                    loadingItem.m_Path,
+                                    resObj,
+                                    resObj.m_Param1,
+                                    resObj.m_Param2,
+                                    resObj.m_Param3
+                                );
+                            }
+
+                            // 普通资源加载请求
+                            callBack.m_DealObjFinish?.Invoke(
+                                loadingItem.m_Path,
+                                obj,
+                                callBack.m_Param1,
+                                callBack.m_Param2,
+                                callBack.m_Param3
+                            );
                         }
                         catch (System.Exception e)
                         {
@@ -638,6 +684,8 @@ public class ResourceManager : BaseManager<ResourceManager>
                         {
                             callBack.Reset();
                             m_AsyncCallBackPool.Recycle(callBack);
+
+                            // 防止外层 finally 再次回收
                             callBackList[j] = null;
                         }
                     }
@@ -825,6 +873,48 @@ public class ResourceManager : BaseManager<ResourceManager>
         return true;
     }
 
+    #endregion
+
+    #region 资源实例化异步加载
+    /// <summary>
+    /// 异步加载资源
+    /// </summary>
+    /// <param name="path"></param>
+    /// <param name="resObj"></param>
+    /// <param name="dealfinish"></param>
+    /// <param name="priority"></param>
+    public void AsyncLoadResource(string path, ResouceObj resObj, OnAsyncFinsih dealfinish, LoadResPriority priority)
+    {
+        //缓存中获取
+        ResouceItem item = GetCacheResouceItem(resObj.m_Crc);
+        if (item != null)
+        {
+            resObj.m_ResItem = item;
+            if (dealfinish != null)
+            {
+                dealfinish(path, resObj);
+            }
+            return;
+        }
+        // 如果缓存中不存在资源，则将加载请求添加到异步加载队列中
+        AsyncLoadResParam para = null;
+        if (!m_LoadingAssetDic.TryGetValue(resObj.m_Crc, out para) || para == null)
+        {
+            para = m_AsyncLoadResParamPool.Spawn(true);
+            para.m_Crc = resObj.m_Crc;
+            para.m_Path = path;
+            para.m_Priority = priority;
+        
+            m_LoadingAssetDic.Add(resObj.m_Crc, para);
+            m_LoadingAssetList[(int)priority].Add(para);
+        }
+        // 添加回调
+        AsyncCallBack callBack = m_AsyncCallBackPool.Spawn(true);
+        callBack.m_DealFinish = dealfinish;
+        callBack.m_ResObj = resObj;
+        para.m_CallBackList.Add(callBack);
+
+    }
     #endregion
 }
 
