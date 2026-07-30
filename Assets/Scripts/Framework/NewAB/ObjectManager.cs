@@ -15,6 +15,8 @@ public class ObjectManager : BaseManager<ObjectManager>
     protected Dictionary<int, ResouceObj> m_ResouceObjDic = new Dictionary<int, ResouceObj>();
     //建立 ResouceObj 的类对象池
     protected ClassObjectPool<ResouceObj> m_ResourceObjClassPool = null;
+    //根据异步的guid储存ressourceObj，来判断是否正在异步加载
+    protected Dictionary<long, ResouceObj> m_AsyncResObjs = new Dictionary<long, ResouceObj>();
     /// <summary>
     /// 初始化对象池节点
     /// </summary>
@@ -60,6 +62,21 @@ public class ObjectManager : BaseManager<ObjectManager>
         }
     
         return null;
+    }
+
+    /// <summary>
+    /// 取消异步加载
+    /// </summary>
+    /// <param name="guid"></param>
+    public void CancleLoad(long guid)
+    {
+        ResouceObj resObj = null;
+        if (m_AsyncResObjs.TryGetValue(guid, out resObj) && ResourceManager.Instance.CancleLoad(resObj))
+        {
+            m_AsyncResObjs.Remove(guid);
+            resObj.Reset();
+            m_ResourceObjClassPool.Recycle(resObj);
+        }
     }
 
     /// <summary>
@@ -140,11 +157,11 @@ public class ObjectManager : BaseManager<ObjectManager>
    /// <param name="param2"> 回调透传参数 2</param>
    /// <param name="param3"> 回调透传参数 3</param>
    /// <param name="bClear">是否参与场景清理，默认值为 true </param>
-    public void InstantiateObjectAsync(string path, OnAsyncObjFinish dealFinish, LoadResPriority priority, bool setSceneObject = false, object param1 = null, object param2 = null, object param3 = null, bool bClear = true)
+    public long InstantiateObjectAsync(string path, OnAsyncObjFinish dealFinish, LoadResPriority priority, bool setSceneObject = false, object param1 = null, object param2 = null, object param3 = null, bool bClear = true)
     {
         if (string.IsNullOrEmpty(path))
         {
-            return;
+            return 0;
         }
 
         uint crc = CRC32.Calculate(path);
@@ -161,10 +178,11 @@ public class ObjectManager : BaseManager<ObjectManager>
             {
                 dealFinish(path, resObj.m_CloneObj, param1, param2, param3);
             }
-            return;
+            return resObj.m_Guid;
         }
 
         //创建 ResouceObj 对象
+        long guid = ResourceManager.Instance.CreatGuid();
         resObj = m_ResourceObjClassPool.Spawn(true);
         resObj.m_Crc = crc;
         resObj.m_SetSceneParent = setSceneObject;
@@ -173,8 +191,12 @@ public class ObjectManager : BaseManager<ObjectManager>
         resObj.m_Param1 = param1;
         resObj.m_Param2 = param2;
         resObj.m_Param3 = param3;
+        resObj.m_Guid = guid;
+        // 建立异步请求索引
+        m_AsyncResObjs.Add(guid, resObj);
         //调用 ResourceManager 加载方法
         ResourceManager.Instance.AsyncLoadResource(path, resObj, OnLoadResouceObjFinish, priority);
+        return guid;
     }
 
     /// <summary>
@@ -202,6 +224,12 @@ public class ObjectManager : BaseManager<ObjectManager>
         {
             // 实例化
             resObj.m_CloneObj = GameObject.Instantiate(resObj.m_ResItem.m_Obj) as GameObject;
+        }
+
+        //如果取消加载字典中有该对象，移除加载对象
+        if (m_AsyncResObjs.ContainsKey(resObj.m_Guid))
+        {
+            m_AsyncResObjs.Remove(resObj.m_Guid);
         }
         
         //按需挂载场景父节点

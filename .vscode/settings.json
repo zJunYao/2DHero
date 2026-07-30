@@ -52,5 +52,6 @@
         "Temp/": true
     },
     "dotnet.preferCSharpExtension": true,
-    "dotnet.defaultSolution": "2DHero.sln"
+    "dotnet.defaultSolution": "2DHero.sln",
+    "editor.snippetSuggestions": "bottom"
 }

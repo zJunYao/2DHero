@@ -13,7 +13,7 @@ public class ResouceObj
     // 切换场景时是否清理
     public bool m_bClear = true;
     // 对象唯一 ID
-    public int m_Guid = 0;
+    public long m_Guid = 0;
     // 是否已经放回对象池
     public bool m_Already = false;
     // 是否设置场景对象
@@ -117,11 +117,13 @@ public delegate void OnAsyncFinsih(string path, ResouceObj resObj, object param1
 public class ResourceManager : BaseManager<ResourceManager>
 {
     private ResourceManager() { }
+    //资源对象唯一ID
+    protected long m_Guid = 0;
     // 是否从AssetBundle加载资源，true表示从AssetBundle加载，false表示从Editor API加载
     public bool m_LoadFormAssetBundle = false;
     //缓存已加载资源字典
     public Dictionary<uint, ResouceItem> AssetDic { get; set; } = new Dictionary<uint, ResouceItem>();
-    //缓存引用计数为0的资源对象，达到最大缓存数量时，释放最久未使用的资源对象
+    //缓存引用计数为0的资源对象，达到最大缓存数量时，释放最久未使用的资源对象 
     protected CMapList<ResouceItem> m_NoRefrenceAssetMapList = new CMapList<ResouceItem>();
 
     //中间类 回调类的对象池
@@ -178,6 +180,15 @@ public class ResourceManager : BaseManager<ResourceManager>
     }
 
     /// <summary>
+    /// 创建唯一GUID
+    /// </summary>
+    /// <returns></returns>
+    public long CreatGuid()
+    {
+        return m_Guid++;
+    }
+
+    /// <summary>
     ///  清空缓存 
     /// </summary>
     public void ClearCache()
@@ -200,6 +211,44 @@ public class ResourceManager : BaseManager<ResourceManager>
         tempList.Clear();
     }
 
+    /// <summary>
+    /// 取消加载异步资源
+ 
+    /// </summary>
+    /// <param name="res"></param>
+    /// <returns></returns>
+    public bool CancleLoad(ResouceObj res)
+    {
+        AsyncLoadResParam para = null;
+
+        if (m_LoadingAssetDic.TryGetValue(res.m_Crc, out para) && m_LoadingAssetList[(int)para.m_Priority].Contains(para))
+        {
+            // 可尝试取消
+            for (int i = para.m_CallBackList.Count - 1; i >= 0; i--)
+            {
+                AsyncCallBack tempCallBack = para.m_CallBackList[i];
+                if (tempCallBack != null && res == tempCallBack.m_ResObj)
+                {
+                    tempCallBack.Reset();
+                    m_AsyncCallBackPool.Recycle(tempCallBack);
+                    para.m_CallBackList.Remove(tempCallBack);
+                }
+            }
+
+            if (para.m_CallBackList.Count <= 0)
+            {
+                // 可以完全取消任务
+                para.Reset();
+                int priority = (int)para.m_Priority;
+                m_LoadingAssetList[priority].Remove(para);
+                m_AsyncLoadResParamPool.Recycle(para);
+                m_LoadingAssetDic.Remove(res.m_Crc);
+                
+                return true;
+            }
+        }
+        return false;
+    }
     /// <summary>
     /// 预加载
     /// </summary>
