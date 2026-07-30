@@ -338,6 +338,9 @@ public class ResourceManager : BaseManager<ResourceManager>
         }
         //释放AssetBundle
         AssetBundleManager.Instance.ReleaseAsset(item);
+        // 清空资源对应的对象池
+        ObjectManager.Instance.ClearPoolObject(item.m_Crc);
+        
         item.m_AssetBundle = null;
         item.m_Guid = 0;
         //清空资源对象引用

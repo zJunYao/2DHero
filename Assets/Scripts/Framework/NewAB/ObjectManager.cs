@@ -30,6 +30,80 @@ public class ObjectManager : BaseManager<ObjectManager>
     }
 
     /// <summary>
+    /// 清空对象池
+    /// </summary>
+    public void ClearCache()
+    {
+        List<uint> tempList = new List<uint>();
+        foreach (uint key in m_ObjectPoolDic.Keys)
+        {
+            List<ResouceObj> st = m_ObjectPoolDic[key];
+            for (int i = st.Count - 1; i >= 0; i--)
+            {
+                ResouceObj resObj = st[i];
+                if (!System.Object.ReferenceEquals(resObj.m_CloneObj, null) && resObj.m_bClear)
+                {
+                    // 清理
+                    GameObject.Destroy(resObj.m_CloneObj);
+                    m_ResouceObjDic.Remove(resObj.m_CloneObj.GetInstanceID());
+                    resObj.Reset();
+                    m_ResourceObjClassPool.Recycle(resObj);
+                }
+            }
+
+            if (st.Count <= 0)
+            {
+                tempList.Add(key);
+            }
+        }
+        //遍历结束后统一删除字典键
+        for (int i = 0; i < tempList.Count; i++)
+        {
+            uint temp = tempList[i];
+            if (m_ObjectPoolDic.ContainsKey(temp))
+            {
+                m_ObjectPoolDic.Remove(temp);
+            }
+        }
+        tempList.Clear();
+    }
+
+    /// <summary>
+    /// 清除某个资源在对象池中所有的对象
+    /// </summary>
+    /// <param name="crc"></param>
+    public void ClearPoolObject(uint crc)
+    {
+        //查询 CRC 对应的对象列表
+        List<ResouceObj> st = null;
+        if (!m_ObjectPoolDic.TryGetValue(crc, out st) || st == null)
+            return;
+
+        //倒序遍历对象列表
+        for (int i = st.Count - 1; i >= 0; i--)
+        {
+            ResouceObj resObj = st[i];
+            if (resObj.m_bClear)
+            {
+                // 清理对象
+                st.Remove(resObj);
+                int tempID = resObj.m_CloneObj.GetInstanceID();
+                GameObject.Destroy(resObj.m_CloneObj);
+
+                //重置并回收
+                resObj.Reset();
+                m_ResouceObjDic.Remove(tempID);
+                m_ResourceObjClassPool.Recycle(resObj);
+            }
+        }
+        //删除空的 CRC 条目
+        if (st.Count <= 0)
+        {
+            m_ObjectPoolDic.Remove(crc);
+        }
+    }
+
+    /// <summary>
     /// 从对象池中获取对象
     /// 1.如果对象池中有可用的对象，则直接返回该对象
     /// </summary>
@@ -77,6 +151,27 @@ public class ObjectManager : BaseManager<ObjectManager>
             resObj.Reset();
             m_ResourceObjClassPool.Recycle(resObj);
         }
+    }
+
+    /// <summary>
+    /// 判断是否正在异步加载
+    /// </summary>
+    /// <param name="guid"></param>
+    /// <returns></returns>
+    public bool IsingAsyncLoad(long guid)
+    {
+        return m_AsyncResObjs[guid] != null;
+    }
+
+    /// <summary>
+    /// 判断对象是否由ObjectManager创建
+    /// </summary>
+    /// <param name="obj"></param>
+    /// <returns></returns>
+    public bool IsObjectManagerCreat(GameObject obj)
+    {
+        ResouceObj resObj = m_ResouceObjDic[obj.GetInstanceID()];
+        return resObj == null ? false : true;
     }
 
     /// <summary>
