@@ -50,7 +50,8 @@ public class gamestart : MonoBehaviour
 
         //-----------------------------------------------------------------------------------------
         //obj = ObjectManager.Instance.InstantiateObject("Assets/_Resource/model/mount/zq67/Prefab/zq67_1.prefab", true, false);
-        ObjectManager.Instance.InstantiateObjectAsync("Assets/_Resource/model/mount/zq67/Prefab/zq67_1.prefab",OnLoadFinish, LoadResPriority.RES_HIGHT,true);
+        //ObjectManager.Instance.InstantiateObjectAsync("Assets/_Resource/model/mount/zq67/Prefab/zq67_1.prefab",OnLoadFinish, LoadResPriority.RES_HIGHT,true);
+        ObjectManager.Instance.PreloadGameObject("Assets/_Resource/model/mount/zq67/Prefab/zq67_1.prefab", 20, false);
     }
 
     void OnLoadFinish( string path, Object obj, object param1 = null, object param2 = null , object param3 = null)

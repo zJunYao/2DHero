@@ -63,6 +63,31 @@ public class ObjectManager : BaseManager<ObjectManager>
     }
 
     /// <summary>
+    /// 资源实例化预加载
+    /// </summary>
+    /// <param name="path">资源的完整路径</param>
+    /// <param name="count">需要预加载的对象实例数量</param>
+    /// <param name="clear">切换场景时是否清除对应缓存</param>
+    public void PreloadGameObject(string path, int count = 1, bool clear = false)
+    {
+        List<GameObject> tempGameObjectList = new List<GameObject>();
+        for (int i = 0; i < count; i++)
+        {
+            GameObject obj = InstantiateObject(path, false, bClear: clear);
+            tempGameObjectList.Add(obj);
+        }
+
+        for (int i = 0; i < count; i++)
+        {
+            GameObject obj = tempGameObjectList[i];
+            ReleaseObject(obj);
+            obj = null;
+        }
+
+        tempGameObjectList.Clear();
+    }
+
+    /// <summary>
     /// 同步加载实例化的gameobject对象（池对象）
     /// </summary>
     /// <param name="path">资源路径</param>
