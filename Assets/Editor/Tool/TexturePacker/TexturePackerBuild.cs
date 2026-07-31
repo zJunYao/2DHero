@@ -7,6 +7,7 @@ using System.Text;
 using System.Diagnostics;
 using System.Linq;
 using System.Xml;
+using UnityEditor.U2D.Sprites;
 
 public class TexturePackerBuild : Editor
 {
@@ -173,10 +174,32 @@ public class TexturePackerBuild : Editor
     //如果这张图集已经拉好了9宫格，需要先保存起来
     static void SaveBoreder(Dictionary<string, Vector4> tIpterMap, TextureImporter tIpter)
     {
-        for (int i = 0, size = tIpter.spritesheet.Length; i < size; i++)
+        ISpriteEditorDataProvider dataProvider = GetSpriteDataProvider(tIpter);
+        if (dataProvider == null)
         {
-            tIpterMap.Add(tIpter.spritesheet[i].name, tIpter.spritesheet[i].border);
+            UnityEngine.Debug.LogError("无法读取 Sprite 切片数据: " + tIpter?.assetPath);
+            return;
         }
+
+        SpriteRect[] spriteRects = dataProvider.GetSpriteRects();
+        for (int i = 0; i < spriteRects.Length; i++)
+        {
+            tIpterMap[spriteRects[i].name] = spriteRects[i].border;
+        }
+    }
+
+    static ISpriteEditorDataProvider GetSpriteDataProvider(TextureImporter textureImporter)
+    {
+        if (textureImporter == null)
+        {
+            return null;
+        }
+
+        SpriteDataProviderFactories factories = new SpriteDataProviderFactories();
+        factories.Init();
+        ISpriteEditorDataProvider dataProvider = factories.GetSpriteEditorDataProviderFromObject(textureImporter);
+        dataProvider?.InitSpriteEditorDataProvider();
+        return dataProvider;
     }
 
     static TextureImporter GetTextureIpter(Texture2D texture)
@@ -200,29 +223,77 @@ public class TexturePackerBuild : Editor
     {
         string path = string.Format("{0}{1}/{2}.png",OutPutDirRoot, sheetName, sheetName);
         Texture2D texture = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+        if (texture == null)
+        {
+            UnityEngine.Debug.LogError("图集加载失败: " + path);
+            return;
+        }
+
         string impPath = AssetDatabase.GetAssetPath(texture);
         TextureImporter asetImp = TextureImporter.GetAtPath(impPath) as TextureImporter;
-        SpriteMetaData[] metaData = new SpriteMetaData[elemList.Count];
-        for (int i = 0, size = elemList.Count; i < size; i++)
+        if (asetImp == null)
         {
-            XmlElement node = (XmlElement)elemList.Item(i);
-            Rect rect = new Rect();
-            rect.x = int.Parse(node.GetAttribute("x"));
-            rect.y = texture.height - int.Parse(node.GetAttribute("y")) - int.Parse(node.GetAttribute("height"));
-            rect.width = int.Parse(node.GetAttribute("width"));
-            rect.height = int.Parse(node.GetAttribute("height"));
-            metaData[i].rect = rect;
-            metaData[i].pivot = new Vector2(0.5f, 0.5f);
-            metaData[i].name = node.GetAttribute("name");
-            if (borders.ContainsKey(metaData[i].name))
-            {
-                metaData[i].border = borders[metaData[i].name];
-            }
+            UnityEngine.Debug.LogError("无法获取图集导入器: " + path);
+            return;
         }
-        asetImp.spritesheet = metaData;
+
         asetImp.textureType = TextureImporterType.Sprite;
         asetImp.spriteImportMode = SpriteImportMode.Multiple;
         asetImp.mipmapEnabled = false;
+
+        ISpriteEditorDataProvider dataProvider = GetSpriteDataProvider(asetImp);
+        if (dataProvider == null)
+        {
+            UnityEngine.Debug.LogError("无法写入 Sprite 切片数据: " + path);
+            return;
+        }
+
+        Dictionary<string, GUID> oldSpriteIds = new Dictionary<string, GUID>();
+        SpriteRect[] oldSpriteRects = dataProvider.GetSpriteRects();
+        for (int i = 0; i < oldSpriteRects.Length; i++)
+        {
+            oldSpriteIds[oldSpriteRects[i].name] = oldSpriteRects[i].spriteID;
+        }
+
+        SpriteRect[] spriteRects = new SpriteRect[elemList.Count];
+        for (int i = 0, size = elemList.Count; i < size; i++)
+        {
+            XmlElement node = (XmlElement)elemList.Item(i);
+            string spriteName = node.GetAttribute("name");
+            int width = int.Parse(node.GetAttribute("width"));
+            int height = int.Parse(node.GetAttribute("height"));
+
+            GUID spriteId = oldSpriteIds.TryGetValue(spriteName, out GUID oldSpriteId)
+                ? oldSpriteId
+                : GUID.Generate();
+            Vector4 border = borders.TryGetValue(spriteName, out Vector4 oldBorder)
+                ? oldBorder
+                : Vector4.zero;
+
+            spriteRects[i] = new SpriteRect
+            {
+                name = spriteName,
+                rect = new Rect(
+                    int.Parse(node.GetAttribute("x")),
+                    texture.height - int.Parse(node.GetAttribute("y")) - height,
+                    width,
+                    height
+                ),
+                pivot = new Vector2(0.5f, 0.5f),
+                alignment = SpriteAlignment.Center,
+                border = border,
+                spriteID = spriteId
+            };
+        }
+
+        dataProvider.SetSpriteRects(spriteRects);
+        ISpriteNameFileIdDataProvider nameFileIdProvider =
+            dataProvider.GetDataProvider<ISpriteNameFileIdDataProvider>();
+        nameFileIdProvider?.SetNameFileIdPairs(
+            spriteRects.Select(spriteRect =>
+                new SpriteNameFileIdPair(spriteRect.name, spriteRect.spriteID))
+        );
+        dataProvider.Apply();
         asetImp.SaveAndReimport();
     }
 }
