@@ -24,6 +24,9 @@ public class ResouceObj
     public object m_Param1 = null;
     public object m_Param2 = null;
     public object m_Param3 = null;
+
+    //离线数据
+    public OfflineData m_OfflineData = null;
  
     public void Reset()
     {
@@ -39,6 +42,7 @@ public class ResouceObj
         m_Param1 = null;
         m_Param2 = null;
         m_Param3 = null;
+        m_OfflineData = null;
     }
 }
 

@@ -104,6 +104,22 @@ public class ObjectManager : BaseManager<ObjectManager>
     }
 
     /// <summary>
+    /// 更据实例化对象获取离线数据
+    /// </summary>
+    /// <param name="obj"></param>
+    /// <returns></returns>
+    public OfflineData FindOfflineData(GameObject obj)
+    {
+        OfflineData data = null;
+        ResouceObj resObj = null;
+        m_ResouceObjDic.TryGetValue(obj.GetInstanceID(), out resObj);
+        if (resObj != null)
+        {
+            data = resObj.m_OfflineData;
+        }
+        return data;
+    }
+    /// <summary>
     /// 从对象池中获取对象
     /// 1.如果对象池中有可用的对象，则直接返回该对象
     /// </summary>
@@ -123,6 +139,11 @@ public class ObjectManager : BaseManager<ObjectManager>
     
             if (!System.Object.ReferenceEquals(obj, null))
             {
+                //通过离线数据填充对象属性
+                if (!System.Object.ReferenceEquals(resObj.m_OfflineData, null))
+                {
+                    resObj.m_OfflineData.ResetProp();
+                }
                 resObj.m_Already = false;
 #if UNITY_EDITOR
                 if (obj.name.EndsWith("(Recycle)"))
@@ -224,6 +245,7 @@ public class ObjectManager : BaseManager<ObjectManager>
             if (resouceObj.m_ResItem.m_Obj != null)
             {
                 resouceObj.m_CloneObj = GameObject.Instantiate(resouceObj.m_ResItem.m_Obj) as GameObject;
+                resouceObj.m_OfflineData = resouceObj.m_CloneObj.GetComponent<OfflineData>();
             }
         }
     
@@ -319,6 +341,7 @@ public class ObjectManager : BaseManager<ObjectManager>
         {
             // 实例化
             resObj.m_CloneObj = GameObject.Instantiate(resObj.m_ResItem.m_Obj) as GameObject;
+            resObj.m_OfflineData = resObj.m_CloneObj.GetComponent<OfflineData>();
         }
 
         //如果取消加载字典中有该对象，移除加载对象
