@@ -37,4 +37,49 @@ public class OfflineDataEditor
         Resources.UnloadUnusedAssets();
         AssetDatabase.Refresh();
     }
+
+    public static void CreateUIData(GameObject obj)
+    {
+        obj.layer = LayerMask.NameToLayer("UI");
+        UIOfflineData uiData = obj.GetComponent<UIOfflineData>();
+        if (uiData == null)
+        {
+            uiData = obj.AddComponent<UIOfflineData>();
+        }
+        uiData.BindData();
+        EditorUtility.SetDirty(obj);
+        Debug.Log("修改了" + obj.name + " UI prefab!");
+        Resources.UnloadUnusedAssets();
+        AssetDatabase.Refresh();
+    }
+
+    [MenuItem("离线数据/生成所有UI prefab离线数据")]
+    public static void AllCreateUIData()
+    {
+        // 批量扫描与处理
+        string[] allStr = AssetDatabase.FindAssets("t:Prefab", new string[] {"Assets/GameData/Prefabs/UGUI"});
+        for (int i = 0; i < allStr.Length; i++)
+        {
+            string prefabPath = AssetDatabase.GUIDToAssetPath(allStr[i]);
+            EditorUtility.DisplayProgressBar("添加UI离线数据", "正在扫描路径：" + prefabPath + "......", 1.0f / allStr.Length * i);
+            GameObject obj = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
+            if (obj == null)
+                continue;
+            CreateUIData(obj);
+        }
+        Debug.Log("UI离线数据全部生成完毕！");
+        EditorUtility.ClearProgressBar();
+    }
+
+    [MenuItem("Assets/生成UI离线数据")]
+    public static void AssetCreateUIData()
+    {
+        GameObject[] objects = Selection.gameObjects;
+        for (int i = 0; i < objects.Length; i++)
+        {
+            EditorUtility.DisplayProgressBar("添加UI离线数据", "正在修改：" + objects[i] + "......", 1.0f / objects.Length * i);
+            CreateUIData(objects[i]);
+        }
+        EditorUtility.ClearProgressBar();
+    }
 }
