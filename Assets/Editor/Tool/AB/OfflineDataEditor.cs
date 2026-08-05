@@ -82,4 +82,35 @@ public class OfflineDataEditor
         }
         EditorUtility.ClearProgressBar();
     }
+
+    [MenuItem("Assets/生成特效离线数据")]
+    public static void AssetCreateEffectData()
+    {
+        GameObject[] objects = Selection.gameObjects;
+    
+        for (int i = 0; i < objects.Length; i++)
+        {
+            EditorUtility.DisplayProgressBar("添加特效离线数据", "正在修改：" + objects[i] + "......", 1.0f / objects.Length * i);
+    
+            CreateEffectData(objects[i]);
+        }
+    
+        EditorUtility.ClearProgressBar();
+    }
+
+    public static void CreateEffectData(GameObject obj)
+    {
+        EffectOfflineData effectData = obj.GetComponent<EffectOfflineData>();
+    
+        if (effectData == null)
+        {
+            effectData = obj.AddComponent<EffectOfflineData>();
+        }
+    
+        effectData.BindData();
+        EditorUtility.SetDirty(obj);
+        Debug.Log("修改了" + obj.name + " 特效 prefab!");
+        Resources.UnloadUnusedAssets();
+        AssetDatabase.Refresh();
+    }
 }
