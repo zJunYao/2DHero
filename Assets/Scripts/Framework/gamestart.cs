@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 public class gamestart : MonoBehaviour
 {
@@ -51,7 +52,18 @@ public class gamestart : MonoBehaviour
         //-----------------------------------------------------------------------------------------
         //obj = ObjectManager.Instance.InstantiateObject("Assets/_Resource/model/mount/zq67/Prefab/zq67_1.prefab", true, false);
         //ObjectManager.Instance.InstantiateObjectAsync("Assets/_Resource/model/mount/zq67/Prefab/zq67_1.prefab",OnLoadFinish, LoadResPriority.RES_HIGHT,true);
-        ObjectManager.Instance.PreloadGameObject("Assets/_Resource/model/mount/zq67/Prefab/zq67_1.prefab", 20, false);
+        //ObjectManager.Instance.PreloadGameObject("Assets/_Resource/model/mount/zq67/Prefab/zq67_1.prefab", 20, false);
+
+        //---------------------------------------------------------------------------------------------------------
+        UIManager.Instance.Init(transform.Find("UIRoot") as RectTransform, transform.Find("UIRoot/Root") as RectTransform, transform.Find("UICamera").GetComponent<Camera>(), transform.Find("UIRoot/EventSystem").GetComponent<EventSystem>());
+        RegiserUI();
+
+        UIManager.Instance.OpenView("GameStartView.prefab");
+    }
+
+    void RegiserUI()
+    {
+        UIManager.Instance.RegisterView<GameStartView>("GameStartView.prefab");
     }
 
     void OnLoadFinish( string path, Object obj, object param1 = null, object param2 = null , object param3 = null)

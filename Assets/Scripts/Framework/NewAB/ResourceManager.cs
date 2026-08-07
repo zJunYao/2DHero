@@ -279,7 +279,7 @@ public class ResourceManager : BaseManager<ResourceManager>
         {
             // 通过 Editor API 加载
             item = AssetBundleManager.Instance.FindResouceItem(crc);
-            if(item.m_Obj != null)
+            if (item != null && item.m_Obj != null)
             {
                 obj = item.m_Obj;
             }
@@ -308,7 +308,10 @@ public class ResourceManager : BaseManager<ResourceManager>
             }
         }
         // 缓存资源对象
-        CacheResource(path, ref item, crc, obj);
+        if (!CacheResource(path, ref item, crc, obj))
+        {
+            return;
+        }
         //跳场景 不清空缓存
         item.m_Clear = false;
         ReleaseResouce(obj, false);
@@ -417,7 +420,7 @@ public class ResourceManager : BaseManager<ResourceManager>
         {
             // 通过 Editor API 加载
             item = AssetBundleManager.Instance.FindResouceItem(crc);
-            if(item.m_Obj != null)
+            if (item != null && item.m_Obj != null)
             {
                 obj = item.m_Obj as T;
             }
@@ -526,17 +529,20 @@ public class ResourceManager : BaseManager<ResourceManager>
     /// <param name="crc"> 资源路径的CRC </param>
     /// <param name="obj"> 资源对象 </param>
     /// <param name="addrefcount"> 要增加的引用计数 </param>
-    void CacheResource(string path, ref ResouceItem item, uint crc, Object obj, int addrefcount = 1)
+    bool CacheResource(string path, ref ResouceItem item, uint crc, Object obj, int addrefcount = 1)
     {   
         // 缓存太多清理没有使用的资源
         WashOut();
-        if (item == null)
-        {
-            Debug.LogError("ResouceItem is null, path: " + path);
-        }
         if (obj == null)
         {
             Debug.LogError("ResouceLoad Fail : " + path);
+            return false;
+        }
+        if (item == null)
+        {
+            // Editor direct loading does not require an AssetBundleConfig entry.
+            item = new ResouceItem();
+            item.m_Crc = crc;
         }
 
         item.m_Obj = obj;
@@ -552,6 +558,7 @@ public class ResourceManager : BaseManager<ResourceManager>
         {
             AssetDic.Add(crc, item);
         }
+        return true;
     } 
 
     /// <summary>
@@ -867,7 +874,7 @@ public class ResourceManager : BaseManager<ResourceManager>
         if (!m_LoadFormAssetBundle)
         {
             item = AssetBundleManager.Instance.FindResouceItem(crc);
-            if (item.m_Obj != null)
+            if (item != null && item.m_Obj != null)
             {
                 obj = item.m_Obj as Object;
             }
@@ -895,7 +902,10 @@ public class ResourceManager : BaseManager<ResourceManager>
             }
         }
 
-        CacheResource(path, ref item, crc, obj);
+        if (!CacheResource(path, ref item, crc, obj))
+        {
+            return null;
+        }
  
         resObj.m_ResItem = item;
         item.m_Clear = resObj.m_bClear;

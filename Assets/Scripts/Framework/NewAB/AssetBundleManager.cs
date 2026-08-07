@@ -208,7 +208,9 @@ public class AssetBundleManager : BaseManager<AssetBundleManager>
     /// <returns></returns>
     public ResouceItem FindResouceItem(uint crc)
     {
-        return m_ResouceItemDic[crc];
+        ResouceItem item = null;
+        m_ResouceItemDic.TryGetValue(crc, out item);
+        return item;
     }
     
 }

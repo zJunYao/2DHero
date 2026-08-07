@@ -239,14 +239,22 @@ public class ObjectManager : BaseManager<ObjectManager>
             resouceObj.m_bClear = bClear;
     
             // ResourceManager 提供加载方法
-            resouceObj = ResourceManager.Instance.LoadResource(path, resouceObj);
+            ResouceObj loadedResouceObj = ResourceManager.Instance.LoadResource(path, resouceObj);
             // 此处还需要加载并填写 resouceObj.m_ResItem
-    
-            if (resouceObj.m_ResItem.m_Obj != null)
+
+            if (loadedResouceObj == null ||
+                loadedResouceObj.m_ResItem == null ||
+                loadedResouceObj.m_ResItem.m_Obj == null)
             {
-                resouceObj.m_CloneObj = GameObject.Instantiate(resouceObj.m_ResItem.m_Obj) as GameObject;
-                resouceObj.m_OfflineData = resouceObj.m_CloneObj.GetComponent<OfflineData>();
+                Debug.LogError("InstantiateObject load failed: " + path);
+                resouceObj.Reset();
+                m_ResourceObjClassPool.Recycle(resouceObj);
+                return null;
             }
+
+            resouceObj = loadedResouceObj;
+            resouceObj.m_CloneObj = GameObject.Instantiate(resouceObj.m_ResItem.m_Obj) as GameObject;
+            resouceObj.m_OfflineData = resouceObj.m_CloneObj.GetComponent<OfflineData>();
         }
     
         if (setSceneObj)
@@ -331,11 +339,19 @@ public class ObjectManager : BaseManager<ObjectManager>
             return;
         }
 
-        if (resObj.m_ResItem.m_Obj == null)
+        if (resObj.m_ResItem == null || resObj.m_ResItem.m_Obj == null)
         {
-#if UNITY_EDITOR
-            Debug.LogError("异步资源加载的资源为空: " + path);
-#endif
+            Debug.LogError("Async resource load failed: " + path);
+
+            if (m_AsyncResObjs.ContainsKey(resObj.m_Guid))
+            {
+                m_AsyncResObjs.Remove(resObj.m_Guid);
+            }
+
+            resObj.m_DealFinish?.Invoke(path, null, resObj.m_Param1, resObj.m_Param2, resObj.m_Param3);
+            resObj.Reset();
+            m_ResourceObjClassPool.Recycle(resObj);
+            return;
         }
         else
         {
