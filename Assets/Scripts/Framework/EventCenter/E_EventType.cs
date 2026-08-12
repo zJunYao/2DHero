@@ -29,6 +29,16 @@ public enum E_EventType
     E_SceneLoadChange,
 
     /// <summary>
+    /// 场景开始加载事件，参数：无。
+    /// </summary>
+    E_SceneLoadEnter,
+
+    /// <summary>
+    /// 场景加载并激活完成事件，参数：无。
+    /// </summary>
+    E_SceneLoadOver,
+
+    /// <summary>
     /// 技能 1 输入事件，参数：无。
     /// </summary>
     E_Input_Skill1,
